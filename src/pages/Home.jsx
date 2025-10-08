@@ -20,7 +20,7 @@ function Home() {
                 <Col xs={24} md={18} lg={14}>
                     {/* HERO */}
                     <Card
-                        bordered={false}
+                        variant="borderless"
                         style={{
                             borderRadius: 16,
                             padding: 32,

@@ -1,6 +1,6 @@
 import React from "react";
 import { createBrowserRouter, RouterProvider, Navigate } from "react-router-dom";
-import Login from "../pages/Login.jsx";
+import Login from "../pages/AuthPage.jsx";
 import Event from "../pages/Event.jsx";
 import EventDetail from "../pages/EventDetail.jsx";
 import SubmitEvent from "../pages/SubmitEvent.jsx";

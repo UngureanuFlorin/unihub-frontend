@@ -90,7 +90,7 @@ function useProfileData(userId) {
                 ][i],
                 createdAt: ["2gg fa", "4gg fa", "1 sett. fa", "2 sett. fa"][i],
             })),
-            isSelf: true, // se è il proprio profilo metti true
+            isSelf: false, // se è il proprio profilo metti true
             isFollowing: false, // stato iniziale (mock)
         }),
         [userId]
