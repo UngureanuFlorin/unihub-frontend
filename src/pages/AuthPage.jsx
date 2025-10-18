@@ -23,7 +23,7 @@ export default function AuthPage() {
             const res = await loginMutation.mutateAsync(values);
             localStorage.setItem("token", res.token);
             messageApi.success("Accesso eseguito!");
-            navigate("/");
+            navigate("/home");
         } catch (err) {
             messageApi.error(err?.response?.data?.message || "Errore durante il login");
         }
