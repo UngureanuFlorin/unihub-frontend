@@ -99,7 +99,7 @@ function Home() {
                                 fontSize: 18,
                                 color: "#333",
                                 marginBottom: 24,
-                                fontWeight: 500,
+                                fontWeight: 300,
                                 maxWidth: 600, // 🔹 limita la larghezza del blocco testo
                                 marginLeft: "auto", // 🔹 centrato orizzontalmente
                                 marginRight: "auto",
@@ -107,9 +107,8 @@ function Home() {
                                 textAlign: "center", // 🔹 allineamento centrale
                             }}
                         >
-                            Benvenuto! La casa degli <b>eventi universitari</b> e dei{" "}
-                            <b>club studenteschi</b>.
-                            <br />
+                            La casa degli <b>eventi universitari</b> e dei{" "}
+                            <b>club studenteschi</b>.<br />
                             Scopri cosa succede nel tuo ateneo e proponi le tue iniziative.
                         </Paragraph>
 

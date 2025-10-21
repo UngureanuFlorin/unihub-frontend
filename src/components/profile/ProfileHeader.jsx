@@ -36,7 +36,7 @@ export default function ProfileHeader({ p, onToggleFollow }) {
     };
 
     return (
-        <Card variant={"borderless"} style={{ borderRadius: 16 }} styles.body={{ padding: 20 }} extra={<Dropdown menu={menu} trigger={["click"]}><Button type="text" icon={<MoreOutlined />} /></Dropdown>}>
+        <Card variant={"borderless"} style={{ borderRadius: 16, padding: 20 }} extra={<Dropdown menu={menu} trigger={["click"]}><Button type="text" icon={<MoreOutlined />} /></Dropdown>}>
             <Row gutter={[16, 16]} align="middle">
                 <Col xs={24} md={4} style={{ display: "flex", justifyContent: "center" }}>
                     <Badge dot offset={[-4, 4]}>

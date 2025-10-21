@@ -22,5 +22,5 @@ body {
 /* Tag con un look più tondo e compatto */
 .ant-tag {
     border-radius: 10px !important;
-    font-weight: 500 !important;
+    font-weight: 400 !important;
 }
