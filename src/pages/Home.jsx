@@ -1,24 +1,75 @@
 import React from "react";
-import { Row, Col, Typography, Button, Card, Space, Tag, Divider } from "antd";
-import { CalendarOutlined, PlusCircleOutlined, CompassOutlined } from "@ant-design/icons";
-import { Link } from "react-router-dom";
+import {
+    Row,
+    Col,
+    Typography,
+    Button,
+    Card,
+    Space,
+    Tag,
+    Divider,
+    Tooltip,
+} from "antd";
+import {
+    CalendarOutlined,
+    PlusCircleOutlined,
+    CompassOutlined,
+} from "@ant-design/icons";
+import { Link, useNavigate } from "react-router-dom";
 
 const { Title, Paragraph, Text } = Typography;
 
 function Home() {
+    const navigate = useNavigate();
+
     return (
         <div
             style={{
                 minHeight: "100vh",
                 padding: "72px 24px",
-                display: "flex",
-                alignItems: "center",
                 background: "linear-gradient(90deg, #e3ffe7 0%, #d9e7ff 100%)",
+                position: "relative",
             }}
         >
+            {/* 🚀 Emoji profilo con tooltip accattivante */}
+            <Tooltip
+                placement="bottomRight"
+                color="white"
+                title={
+                    <span
+                        style={{
+                            fontWeight: "bold",
+                            background: "linear-gradient(90deg, #00c6ff 0%, #0072ff 100%)",
+                            WebkitBackgroundClip: "text",
+                            WebkitTextFillColor: "transparent",
+                            fontSize: 14,
+                        }}
+                    >
+            🚀 Entra nel tuo spazio!
+          </span>
+                }
+            >
+                <div
+                    onClick={() => navigate("/profile")}
+                    style={{
+                        position: "absolute",
+                        top: 20,
+                        right: 28,
+                        fontSize: 36,
+                        cursor: "pointer",
+                        userSelect: "none",
+                        transition: "transform 0.25s ease",
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.2) rotate(10deg)")}
+                    onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1) rotate(0deg)")}
+                >
+                    🚀
+                </div>
+            </Tooltip>
+
+            {/* CONTENUTO CENTRALE */}
             <Row justify="center" gutter={[24, 24]} style={{ width: "100%" }}>
                 <Col xs={24} md={18} lg={14}>
-                    {/* HERO */}
                     <Card
                         variant="borderless"
                         style={{
@@ -43,17 +94,38 @@ function Home() {
               </span>
                         </Title>
 
-                        <Paragraph style={{ fontSize: 18, color: "#555", marginBottom: 24 }}>
-                            Benvenuto! La casa degli <b>eventi universitari</b> e dei <b>club studenteschi</b>.
+                        <Paragraph
+                            style={{
+                                fontSize: 18,
+                                color: "#333",
+                                marginBottom: 24,
+                                fontWeight: 500,
+                                maxWidth: 600, // 🔹 limita la larghezza del blocco testo
+                                marginLeft: "auto", // 🔹 centrato orizzontalmente
+                                marginRight: "auto",
+                                lineHeight: 1.6, // 🔹 più aria tra le righe
+                                textAlign: "center", // 🔹 allineamento centrale
+                            }}
+                        >
+                            Benvenuto! La casa degli <b>eventi universitari</b> e dei{" "}
+                            <b>club studenteschi</b>.
+                            <br />
                             Scopri cosa succede nel tuo ateneo e proponi le tue iniziative.
                         </Paragraph>
 
+
                         <Space size="middle" wrap style={{ justifyContent: "center" }}>
                             <Link to="/events">
-                                <Button size="large" icon={<CompassOutlined />}>Esplora eventi</Button>
+                                <Button size="large" icon={<CompassOutlined />}>
+                                    Esplora eventi
+                                </Button>
                             </Link>
-                            <Link to="/submit-event">
-                                <Button type="primary" size="large" icon={<PlusCircleOutlined />}>
+                            <Link to="/create/event">
+                                <Button
+                                    type="primary"
+                                    size="large"
+                                    icon={<PlusCircleOutlined />}
+                                >
                                     Crea evento
                                 </Button>
                             </Link>
@@ -76,24 +148,34 @@ function Home() {
                         <Col xs={24} md={8}>
                             <Card hoverable style={{ borderRadius: 12 }}>
                                 <Space direction="vertical" size={6}>
-                                    <Text strong><CalendarOutlined /> Questa settimana</Text>
-                                    <Text type="secondary">Hackathon, workshop e sport di ateneo.</Text>
+                                    <Text strong>
+                                        <CalendarOutlined /> Questa settimana
+                                    </Text>
+                                    <Text type="secondary">
+                                        Hackathon, workshop e sport di ateneo.
+                                    </Text>
                                 </Space>
                             </Card>
                         </Col>
                         <Col xs={24} md={8}>
-                            <Card hoverable style={{ borderRadius: 12 }}>
-                                <Space direction="vertical" size={6}>
-                                    <Text strong>Club attivi</Text>
-                                    <Text type="secondary">Musica, tech, volontariato e molto altro.</Text>
-                                </Space>
-                            </Card>
+                            <Link to="/clubs">
+                                <Card hoverable style={{ borderRadius: 12 }}>
+                                    <Space direction="vertical" size={6}>
+                                        <Text strong>Club attivi</Text>
+                                        <Text type="secondary">
+                                            Musica, tech, volontariato e molto altro.
+                                        </Text>
+                                    </Space>
+                                </Card>
+                            </Link>
                         </Col>
                         <Col xs={24} md={8}>
                             <Card hoverable style={{ borderRadius: 12 }}>
                                 <Space direction="vertical" size={6}>
                                     <Text strong>Diventa organizzatore</Text>
-                                    <Text type="secondary">Proponi un evento e sali di ruolo.</Text>
+                                    <Text type="secondary">
+                                        Proponi un evento e sali di ruolo.
+                                    </Text>
                                 </Space>
                             </Card>
                         </Col>

@@ -21,8 +21,15 @@ export default function AuthPage() {
     const handleLoginFinish = async (values) => {
         try {
             const res = await loginMutation.mutateAsync(values);
-            localStorage.setItem("token", res.token);
-            messageApi.success("Accesso eseguito!");
+
+            // ✅ salva le info dell’utente loggato
+            const userData = {
+                username: res.username,
+                role: res.role,
+            };
+            localStorage.setItem("user", JSON.stringify(userData));
+
+            messageApi.success(res.message || "Accesso eseguito!");
             navigate("/home");
         } catch (err) {
             messageApi.error(err?.response?.data?.message || "Errore durante il login");

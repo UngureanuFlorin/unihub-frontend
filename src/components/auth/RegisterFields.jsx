@@ -1,15 +1,15 @@
-import React, { useMemo, useState } from "react";
-import { ProFormText, ProFormSelect } from "@ant-design/pro-components";
+import React, {useMemo, useState} from "react";
+import {ProFormSelect, ProFormText} from "@ant-design/pro-components";
 import {
-    LockOutlined,
-    UserOutlined,
-    MailOutlined,
-    IdcardOutlined,
-    BankOutlined,
     ApartmentOutlined,
+    BankOutlined,
+    IdcardOutlined,
+    LockOutlined,
+    MailOutlined,
+    UserOutlined,
 } from "@ant-design/icons";
-import { useQueryClient } from "@tanstack/react-query";
-import { checkUsername, checkEmail } from "../../api/checks.js";
+import {useQueryClient} from "@tanstack/react-query";
+import {checkEmail, checkUsername} from "../../api/checks.api.js";
 
 export default function RegisterFields({ universitaOptions }) {
     const queryClient = useQueryClient();
@@ -152,8 +152,7 @@ export default function RegisterFields({ universitaOptions }) {
                 // usa request per caricare le opzioni in base all'università selezionata
                 request={async () => {
                     if (!selectedUniId) return [];
-                    const items = await fetchDipartimentiByUni(Number(selectedUniId));
-                    return items;
+                    return await fetchDipartimentiByUni(Number(selectedUniId));
                 }}
                 // forza il refresh quando cambia l'università
                 params={{ selectedUniId }}

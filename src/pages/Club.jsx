@@ -1,4 +1,3 @@
-// pages/Event.jsx
 import React, { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useInfiniteEvents } from "../queries/events.queries";
@@ -6,7 +5,7 @@ import Hero from "../components/common/Hero.jsx";
 import Filters from "../components/common/Filters.jsx";
 import List from "../components/common/List.jsx";
 
-export default function Event() {
+export default function Club() {
     const navigate = useNavigate();
 
     // Stato filtri (controllato)
@@ -44,7 +43,7 @@ export default function Event() {
         <div style={{ padding: 24 }}>
             <Hero
                 titleGradientText="UniHub"
-
+                titleSuffix="un club per ogni attività"
                 subtitle="Filtra per ateneo, categoria e data. Clicca un evento per i dettagli."
                 onSearch={(q) => setFilters((f) => ({ ...f, search: q }))}
             />

@@ -1,24 +1,109 @@
 import React from "react";
 import { createBrowserRouter, RouterProvider, Navigate } from "react-router-dom";
+import { Spin } from "antd";
+
 import Login from "../pages/AuthPage.jsx";
+import Home from "../pages/Home.jsx";
 import Event from "../pages/Event.jsx";
 import EventDetail from "../pages/EventDetail.jsx";
 import SubmitEvent from "../pages/SubmitEvent.jsx";
 import Profile from "../pages/Profile.jsx";
-import Home from "../pages/Home.jsx";
 
-const router = createBrowserRouter([
-    { path: "/login", element: <Login /> },
-    { path: "/events", element: <Event /> },
-    { path: "/home", element: <Home /> },
-    { path: "/create/event", element: <SubmitEvent /> },
-    { path: "/events/:id", element: <EventDetail /> },
-    { path: "/profile", element: <Profile /> },
-    { path: "*", element: <Navigate to="/login" replace /> },
-]);
+import PublicRoute from "../layout/PublicRoute.jsx";
+import useAuth from "../hooks/useAuth.js";
+import Club from "../pages/Club.jsx";
 
-function AppRouter() {
-    return <RouterProvider router={router} />;
+// ✅ Wrapper con spinner per gestire loading globale
+function RouteWithAuth({ children, protect = false }) {
+    const { user, loading } = useAuth();
+
+    if (loading) {
+        return (
+            <div
+                style={{
+                    height: "100vh",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                }}
+            >
+                <Spin size="large" tip="Caricamento..." />
+            </div>
+        );
+    }
+
+    // Se la rotta è protetta e l’utente non è loggato → login
+    if (protect && !user) {
+        return <Navigate to="/login" replace />;
+    }
+
+    return children;
 }
 
-export default AppRouter;
+const router = createBrowserRouter([
+    // 🔓 ROTTE PUBBLICHE
+    {
+        path: "/login",
+        element: (
+            <PublicRoute>
+                <Login />
+            </PublicRoute>
+        ),
+    },
+    {
+        path: "/home",
+        element: (
+            <RouteWithAuth>
+                <Home />
+            </RouteWithAuth>
+        ),
+    },
+    {
+        path: "/events",
+        element: (
+            <RouteWithAuth>
+                <Event />
+            </RouteWithAuth>
+        ),
+    },
+    {
+        path: "/clubs",
+        element: (
+            <RouteWithAuth>
+                <Club />
+            </RouteWithAuth>
+        ),
+    },
+    // 🔒 ROTTE PROTETTE
+    {
+        path: "/events/:id",
+        element: (
+            <RouteWithAuth protect>
+                <EventDetail />
+            </RouteWithAuth>
+        ),
+    },
+    {
+        path: "/create/event",
+        element: (
+            <RouteWithAuth protect>
+                <SubmitEvent />
+            </RouteWithAuth>
+        ),
+    },
+    {
+        path: "/profile",
+        element: (
+            <RouteWithAuth protect>
+                <Profile />
+            </RouteWithAuth>
+        ),
+    },
+
+    // fallback
+    { path: "*", element: <Navigate to="/home" replace /> },
+]);
+
+export default function AppRouter() {
+    return <RouterProvider router={router} />;
+}

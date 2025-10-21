@@ -1,10 +1,21 @@
-import { useMemo } from "react";
+import { useState, useEffect } from "react";
 
-function useAuth() {
-    // TODO: collega al tuo backend; per ora utente non loggato
-    const loading = false;
-    const user = null; // es: { id: 'u1', role: 'moderator', name: 'Alice' }
-    return useMemo(() => ({ user, loading }), [user, loading]);
+export default function useAuth() {
+    const [user, setUser] = useState(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const stored = localStorage.getItem("user");
+        if (stored) {
+            setUser(JSON.parse(stored));
+        }
+        setLoading(false);
+    }, []);
+
+    const logout = () => {
+        localStorage.removeItem("user");
+        setUser(null);
+    };
+
+    return { user, loading, logout };
 }
-
-export default useAuth;
