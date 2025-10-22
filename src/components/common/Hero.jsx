@@ -1,5 +1,6 @@
 import React from "react";
 import { Row, Col, Typography, Input } from "antd";
+import {Link} from "react-router-dom";
 
 const { Title, Text } = Typography;
 
@@ -13,6 +14,12 @@ export default function Hero({
         <Row gutter={[24, 24]} align="middle">
             <Col xs={24} md={14}>
                 <Title level={2} style={{ marginBottom: 8 }}>
+                    <Link
+                        to="/home"
+                        style={{
+                            textDecoration: "none",
+                        }}
+                    >
           <span
               style={{
                   background: "linear-gradient(90deg, #00d2ff 0%, #3a47d5 100%)",
@@ -22,7 +29,7 @@ export default function Hero({
               }}
           >
             {titleGradientText}
-          </span>{" "}
+          </span></Link>{" "}
                     — {titleSuffix}
                 </Title>
                 {subtitle && <Text type="secondary">{subtitle}</Text>}

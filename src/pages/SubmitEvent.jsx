@@ -1,88 +1,136 @@
 import React from "react";
-import { Card, Form, Input, DatePicker, Select, Upload, Button } from "antd";
+import { Card, Form, Input, DatePicker, InputNumber, Button, message } from "antd";
+import { useCreateEvent } from "../queries/events.mutations";
 
 const { TextArea } = Input;
+const { RangePicker } = DatePicker;
 
 function SubmitEvent() {
     const [form] = Form.useForm();
+    const createEventMutation = useCreateEvent();
+    const [messageApi, contextHolder] = message.useMessage();
 
-    const onFinish = (values) => {
-        console.log("Valori evento (solo debug, nessun salvataggio):", values);
+    const onFinish = async (values) => {
+        try {
+            const username = JSON.parse(localStorage.getItem("user"))?.username;
+            if (!username) {
+                messageApi.error("Utente non loggato!");
+                return;
+            }
+
+            const [start, end] = values.datetimeRange;
+
+            const eventPayload = {
+                titolo: values.title,
+                descrizione: values.description,
+                luogo: values.place,
+                dataInizio: start.toISOString(),
+                dataFine: end.toISOString(),
+                postiTotali: values.totalSeats,
+                deadlineIscrizione: values.deadline.toISOString(),
+            };
+
+            // 🔹 passa username come query param
+            await createEventMutation.mutateAsync({ eventPayload, username });
+
+            messageApi.success("✅ Evento creato con successo!");
+            form.resetFields();
+        } catch (err) {
+            messageApi.error(err?.response?.data || "Errore durante la creazione");
+        }
     };
+
 
     return (
         <div style={{ padding: 24 }}>
-            <Card title="Proponi un evento">
-                <Form form={form} layout="vertical" onFinish={onFinish}>
-                    <Form.Item name="title" label="Titolo" rules={[{ required: true }]}>
-                        <Input maxLength={120} showCount />
-                    </Form.Item>
-
-                    <Form.Item name="summary" label="Sommario" rules={[{ required: true }]}>
-                        <Input maxLength={160} showCount />
+            {contextHolder}
+            <Card
+                title="🎉 Crea un nuovo evento"
+                style={{
+                    maxWidth: 700,
+                    margin: "0 auto",
+                    boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
+                    borderRadius: 12,
+                }}
+            >
+                <Form
+                    form={form}
+                    layout="vertical"
+                    onFinish={onFinish}
+                    initialValues={{
+                        totalSeats: 100,
+                    }}
+                >
+                    <Form.Item
+                        name="title"
+                        label="Titolo"
+                        rules={[{ required: true, message: "Inserisci un titolo" }]}
+                    >
+                        <Input placeholder="Titolo dell'evento" maxLength={120} showCount />
                     </Form.Item>
 
                     <Form.Item
                         name="description"
                         label="Descrizione"
-                        rules={[{ required: true, min: 20, max: 2000 }]}
+                        rules={[
+                            { required: true, message: "Inserisci una descrizione" },
+                            { min: 20, max: 2000, message: "Minimo 20 caratteri" },
+                        ]}
                     >
-                        <TextArea rows={6} showCount />
+                        <TextArea rows={5} placeholder="Descrivi brevemente l'evento..." showCount />
                     </Form.Item>
 
-                    <Form.Item name="datetime" label="Data/Ora" rules={[{ required: true }]}>
-                        <DatePicker showTime style={{ width: "100%" }} />
+                    <Form.Item
+                        name="place"
+                        label="Luogo (fisico o online)"
+                        rules={[{ required: true, message: "Specifica il luogo" }]}
+                    >
+                        <Input placeholder="Esempio: Aula Magna 1 o Link Zoom" />
                     </Form.Item>
 
-                    <Form.Item name="place" label="Luogo (fisico o online)" rules={[{ required: true }]}>
-                        <Input placeholder="Indirizzo o link meeting" />
-                    </Form.Item>
-
-                    <Form.Item name="link" label="Link evento (opzionale)">
-                        <Input placeholder="https://…" />
-                    </Form.Item>
-
-                    <Form.Item name="category" label="Categoria" rules={[{ required: true }]}>
-                        <Select
-                            placeholder="Seleziona categoria"
-                            options={[
-                                { value: "accademico", label: "Accademico" },
-                                { value: "sport", label: "Sport" },
-                                { value: "cultura", label: "Cultura" },
-                                { value: "carriera", label: "Carriera" },
-                                { value: "volontariato", label: "Volontariato" },
-                            ]}
+                    <Form.Item
+                        name="datetimeRange"
+                        label="Periodo dell'evento"
+                        rules={[{ required: true, message: "Specifica data e ora" }]}
+                    >
+                        <RangePicker
+                            showTime
+                            style={{ width: "100%" }}
+                            placeholder={["Data inizio", "Data fine"]}
+                            format="YYYY-MM-DD HH:mm"
                         />
                     </Form.Item>
 
-                    <Form.Item name="university" label="Ateneo" rules={[{ required: true }]}>
-                        <Select
-                            options={[
-                                { value: "unimi", label: "UniMi" },
-                                { value: "polimi", label: "PoliMi" },
-                            ]}
+                    <Form.Item
+                        name="deadline"
+                        label="Scadenza iscrizioni"
+                        rules={[{ required: true, message: "Specifica la deadline" }]}
+                    >
+                        <DatePicker
+                            showTime
+                            style={{ width: "100%" }}
+                            format="YYYY-MM-DD HH:mm"
+                            placeholder="Deadline iscrizioni"
                         />
                     </Form.Item>
 
-                    <Form.Item name="faculty" label="Facoltà (opzionale)">
-                        <Select
-                            allowClear
-                            options={[
-                                { value: "ingegneria", label: "Ingegneria" },
-                                { value: "economia", label: "Economia" },
-                            ]}
-                        />
-                    </Form.Item>
-
-                    <Form.Item name="cover" label="Copertina (opzionale)">
-                        <Upload beforeUpload={() => false} listType="picture-card">
-                            Carica
-                        </Upload>
+                    <Form.Item
+                        name="totalSeats"
+                        label="Posti totali disponibili"
+                        rules={[{ required: true, message: "Specifica il numero di posti" }]}
+                    >
+                        <InputNumber min={1} max={500} style={{ width: "100%" }} />
                     </Form.Item>
 
                     <Form.Item>
-                        <Button type="primary" htmlType="submit" block>
-                            Invia (solo demo)
+                        <Button
+                            type="primary"
+                            htmlType="submit"
+                            block
+                            size="large"
+                            loading={createEventMutation.isPending}
+                        >
+                            {createEventMutation.isPending ? "Creazione in corso..." : "Crea evento"}
                         </Button>
                     </Form.Item>
                 </Form>

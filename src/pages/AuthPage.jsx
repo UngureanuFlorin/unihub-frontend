@@ -24,6 +24,7 @@ export default function AuthPage() {
 
             // ✅ salva le info dell’utente loggato
             const userData = {
+                id: res.id,
                 username: res.username,
                 role: res.role,
             };

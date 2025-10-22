@@ -9,19 +9,22 @@ import {
     Tag,
     Divider,
     Tooltip,
+    Avatar,
 } from "antd";
 import {
     CalendarOutlined,
     PlusCircleOutlined,
     CompassOutlined,
+    UserOutlined,
 } from "@ant-design/icons";
 import { Link, useNavigate } from "react-router-dom";
+import useAuth from "../hooks/useAuth.js";
 
 const { Title, Paragraph, Text } = Typography;
 
 function Home() {
     const navigate = useNavigate();
-
+    const { user } = useAuth();
     return (
         <div
             style={{
@@ -31,41 +34,89 @@ function Home() {
                 position: "relative",
             }}
         >
-            {/* 🚀 Emoji profilo con tooltip accattivante */}
-            <Tooltip
-                placement="bottomRight"
-                color="white"
-                title={
-                    <span
-                        style={{
-                            fontWeight: "bold",
-                            background: "linear-gradient(90deg, #00c6ff 0%, #0072ff 100%)",
-                            WebkitBackgroundClip: "text",
-                            WebkitTextFillColor: "transparent",
-                            fontSize: 14,
-                        }}
-                    >
-            🚀 Entra nel tuo spazio!
-          </span>
-                }
-            >
-                <div
-                    onClick={() => navigate("/profile")}
-                    style={{
-                        position: "absolute",
-                        top: 20,
-                        right: 28,
-                        fontSize: 36,
-                        cursor: "pointer",
-                        userSelect: "none",
-                        transition: "transform 0.25s ease",
-                    }}
-                    onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.2) rotate(10deg)")}
-                    onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1) rotate(0deg)")}
+            {/* 🚀 Se NON loggato → mostra il razzo */}
+            {!user && (
+                <Tooltip
+                    placement="bottomRight"
+                    color="white"
+                    title={
+                        <span
+                            style={{
+                                fontWeight: "bold",
+                                background: "linear-gradient(90deg, #00c6ff 0%, #0072ff 100%)",
+                                WebkitBackgroundClip: "text",
+                                WebkitTextFillColor: "transparent",
+                                fontSize: 14,
+                            }}
+                        >
+              🚀 Entra nel tuo spazio!
+            </span>
+                    }
                 >
-                    🚀
-                </div>
-            </Tooltip>
+                    <div
+                        onClick={() => navigate("/login")}
+                        style={{
+                            position: "absolute",
+                            top: 20,
+                            right: 28,
+                            fontSize: 36,
+                            cursor: "pointer",
+                            userSelect: "none",
+                            transition: "transform 0.25s ease",
+                        }}
+                        onMouseEnter={(e) =>
+                            (e.currentTarget.style.transform = "scale(1.2) rotate(10deg)")
+                        }
+                        onMouseLeave={(e) =>
+                            (e.currentTarget.style.transform = "scale(1) rotate(0deg)")
+                        }
+                    >
+                        🚀
+                    </div>
+                </Tooltip>
+            )}
+
+            {/* 👤 Se loggato → mostra Avatar */}
+            {user && (
+                <Tooltip
+                    placement="bottomRight"
+                    color="white"
+                    title={
+                        <span
+                            style={{
+                                fontWeight: "bold",
+                                background: "linear-gradient(90deg, #00d2ff 0%, #3a47d5 100%)",
+                                WebkitBackgroundClip: "text",
+                                WebkitTextFillColor: "transparent",
+                                fontSize: 14,
+                            }}
+                        >
+              👋 Ciao {user.username}!
+            </span>
+                    }
+                >
+                    <Avatar
+                        size={48}
+                        icon={<UserOutlined />}
+                        src={user.image || null}
+                        onClick={() => navigate("/profile")}
+                        style={{
+                            position: "absolute",
+                            top: 16,
+                            right: 24,
+                            cursor: "pointer",
+                            border: "2px solid #1677ff",
+                            transition: "transform 0.2s ease",
+                        }}
+                        onMouseEnter={(e) =>
+                            (e.currentTarget.style.transform = "scale(1.15)")
+                        }
+                        onMouseLeave={(e) =>
+                            (e.currentTarget.style.transform = "scale(1)")
+                        }
+                    />
+                </Tooltip>
+            )}
 
             {/* CONTENUTO CENTRALE */}
             <Row justify="center" gutter={[24, 24]} style={{ width: "100%" }}>

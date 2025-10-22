@@ -55,8 +55,10 @@ function toUiEventDetail(dto) {
         deadlinePretty: formatPretty(dto.deadlineIscrizione),
         average: 0,
         comments: [],
+        userIscritto: dto.userIscritto ?? false, // 👈 AGGIUNGILO QUI
     };
 }
+
 
 /* ================================
    🔹 Fetch API
@@ -85,9 +87,25 @@ export async function fetchEventsPage({ page = 0, size = 9 }) {
 }
 
 export async function fetchEvent(id) {
-    const res = await axios.get(`/api/eventi/${id}`);
+    const storedUser = localStorage.getItem("user");
+    let username = null;
+
+    if (storedUser) {
+        try {
+            username = JSON.parse(storedUser).username;
+        } catch {
+            username = null;
+        }
+    }
+
+    const res = await axios.get(`/api/eventi/${id}`, {
+        params: username ? { username } : {},
+    });
+
     return toUiEventDetail(res.data);
 }
+
+
 
 /* ================================
    🔹 React Query hooks
