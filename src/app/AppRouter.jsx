@@ -102,7 +102,7 @@ const router = createBrowserRouter([
         ),
     },
     {
-        path: "/profiles",
+        path: "/users",
         element: (
             <RouteWithAuth protect>
                 <People />
@@ -110,7 +110,7 @@ const router = createBrowserRouter([
         ),
     },
     {
-        path: "/profiles/:id",
+        path: "/users/:id",
         element: (
             <RouteWithAuth protect>
                 <UserProfile />

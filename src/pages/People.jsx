@@ -44,7 +44,7 @@ export default function People() {
                     dataSource={items}
                     renderItem={(u) => (
                         <List.Item key={u.id}>
-                            <UserCard u={u} onOpen={(id) => navigate(`/profile/${id}`)} />
+                            <UserCard u={u} onOpen={(id) => navigate(`/users/${id}`)} />
                         </List.Item>
                     )}
                 />
