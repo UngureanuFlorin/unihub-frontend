@@ -12,6 +12,8 @@ import Profile from "../pages/Profile.jsx";
 import PublicRoute from "../layout/PublicRoute.jsx";
 import useAuth from "../hooks/useAuth.js";
 import Club from "../pages/Club.jsx";
+import People from "../pages/People.jsx";
+import UserProfile from "../pages/UserProfile.jsx";
 
 // ✅ Wrapper con spinner per gestire loading globale
 function RouteWithAuth({ children, protect = false }) {
@@ -99,7 +101,22 @@ const router = createBrowserRouter([
             </RouteWithAuth>
         ),
     },
-
+    {
+        path: "/profiles",
+        element: (
+            <RouteWithAuth protect>
+                <People />
+            </RouteWithAuth>
+        ),
+    },
+    {
+        path: "/profiles/:id",
+        element: (
+            <RouteWithAuth protect>
+                <UserProfile />
+            </RouteWithAuth>
+        ),
+    },
     // fallback
     { path: "*", element: <Navigate to="/home" replace /> },
 ]);
