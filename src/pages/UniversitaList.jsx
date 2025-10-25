@@ -16,14 +16,17 @@ import {
     useAddDipartimento,
     useDeleteDipartimento,
 } from "../queries/dipartimenti.mutations.js";
+import { useNavigate } from "react-router-dom";
+import { ArrowLeftOutlined, HomeOutlined } from "@ant-design/icons";
 
 const { Title } = Typography;
 
 export default function UniversitaList() {
     const [selectedUni, setSelectedUni] = useState(null);
     const [newDeptName, setNewDeptName] = useState("");
-    const [newDeptDescr, setNewDeptDescr] = useState("");
     const [confirmDelete, setConfirmDelete] = useState(null);
+
+    const navigate = useNavigate();
 
     const { data: universita, isLoading: loadingUni } = useUniversitaList();
     const { data: dipartimenti, isLoading: loadingDeps } = useDipartimenti(selectedUni?.id);
@@ -33,8 +36,19 @@ export default function UniversitaList() {
 
     return (
         <div style={{ padding: 24 }}>
+            <Space style={{ marginBottom: 16 }}>
+                <Button
+                    icon={<HomeOutlined />}
+                    onClick={() => navigate("/home")}
+                    type="default"
+                >
+                    Torna alla Home
+                </Button>
+            </Space>
+
             <Title level={2}>Università</Title>
 
+            {/* Lista Università */}
             <List
                 bordered
                 loading={loadingUni}
@@ -48,17 +62,19 @@ export default function UniversitaList() {
                         }}
                         onClick={() => setSelectedUni(u)}
                     >
-                        <List.Item.Meta title={u.nome} description={u.descrizione} />
+                        <List.Item.Meta title={u.nome} />
                     </List.Item>
                 )}
             />
 
+            {/* Selezione Università */}
             {selectedUni && (
                 <Card
                     title={`Dipartimenti di ${selectedUni.nome}`}
                     style={{ marginTop: 24 }}
                     loading={loadingDeps}
                 >
+                    {/* Lista dipartimenti */}
                     <List
                         dataSource={dipartimenti || []}
                         renderItem={(d) => (
@@ -73,7 +89,7 @@ export default function UniversitaList() {
                                     </Button>,
                                 ]}
                             >
-                                <List.Item.Meta title={d.nome} description={d.descrizione} />
+                                <List.Item.Meta title={d.nome} />
                             </List.Item>
                         )}
                     />
@@ -87,17 +103,12 @@ export default function UniversitaList() {
                                 value={newDeptName}
                                 onChange={(e) => setNewDeptName(e.target.value)}
                             />
-                            <Input.TextArea
-                                placeholder="Descrizione"
-                                rows={3}
-                                value={newDeptDescr}
-                                onChange={(e) => setNewDeptDescr(e.target.value)}
-                            />
                             <Button
                                 type="primary"
-                                onClick={() =>
-                                    addMutation.mutate({ nome: newDeptName, descrizione: newDeptDescr })
-                                }
+                                onClick={() => {
+                                    addMutation.mutate({ nome: newDeptName });
+                                    setNewDeptName("");
+                                }}
                                 disabled={!newDeptName}
                                 loading={addMutation.isPending}
                             >

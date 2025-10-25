@@ -1,32 +1,58 @@
 import React from "react";
-import { Card, Divider, List, Space, Tag, Typography, Tooltip } from "antd";
-import { CalendarOutlined, LikeOutlined, MessageOutlined } from "@ant-design/icons";
+import { Card, List, Typography, Space, Empty } from "antd";
+import { CalendarOutlined, EnvironmentOutlined, UserOutlined } from "@ant-design/icons";
 
 const { Text, Paragraph } = Typography;
 
-export function EventsTab({ events, onOpen }) {
+export function EventsTab({ events = [], onOpen }) {
+    if (!events.length) {
+        return <Empty description="Nessun evento creato" style={{ marginTop: 40 }} />;
+    }
+
     return (
         <List
-            grid={{ gutter: 16, xs: 1, sm: 2, md: 3 }}
+            grid={{ gutter: 16, xs: 1, sm: 2, md: 2, lg: 2 }}
             dataSource={events}
             renderItem={(ev) => (
                 <List.Item key={ev.id}>
                     <Card
                         hoverable
-                        title={<Space><CalendarOutlined /><Text strong>{ev.title}</Text></Space>}
-                        extra={<Text type="secondary">{ev.datePretty}</Text>}
-                        onClick={() => onOpen?.(ev.id)}
-                        style={{ borderRadius: 12 }}
+                        onClick={() => onOpen(ev.id)}
+                        style={{
+                            borderRadius: 12,
+                            cursor: "pointer",
+                            minHeight: 160,
+                        }}
                     >
-                        <Paragraph style={{ minHeight: 48, marginBottom: 8 }}>{ev.summary}</Paragraph>
-                        <Space size="small" wrap>
-                            <Tag>{ev.category}</Tag>
-                            {ev.university && <Tag color="geekblue">{ev.university}</Tag>}
-                        </Space>
-                        <Divider style={{ margin: "12px 0" }} />
-                        <Space size="middle">
-                            <Tooltip title="Apprezzamenti"><Space size={4}><LikeOutlined /><Text>{ev.likes}</Text></Space></Tooltip>
-                            <Tooltip title="Commenti"><Space size={4}><MessageOutlined /><Text>{ev.comments}</Text></Space></Tooltip>
+                        <Space direction="vertical" size={4} style={{ width: "100%" }}>
+                            <Text strong style={{ fontSize: 16 }}>
+                                {ev.titolo}
+                            </Text>
+                            <Paragraph
+                                type="secondary"
+                                ellipsis={{ rows: 2 }}
+                                style={{ marginBottom: 4 }}
+                            >
+                                {ev.descrizione}
+                            </Paragraph>
+                            <Text type="secondary">
+                                <EnvironmentOutlined /> {ev.luogo}
+                            </Text>
+                            <Text type="secondary">
+                                <CalendarOutlined />{" "}
+                                {new Date(ev.dataInizio).toLocaleString("it-IT", {
+                                    day: "2-digit",
+                                    month: "2-digit",
+                                    year: "numeric",
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                })}
+                            </Text>
+                            {ev.creatore && (
+                                <Text type="secondary">
+                                    <UserOutlined /> @{ev.creatore.username}
+                                </Text>
+                            )}
                         </Space>
                     </Card>
                 </List.Item>
@@ -34,18 +60,45 @@ export function EventsTab({ events, onOpen }) {
         />
     );
 }
+export function CommentsTab({ comments = [], onEventClick }) {
+    if (!comments.length) {
+        return <Empty description="Nessun commento disponibile" style={{ marginTop: 40 }} />;
+    }
 
-export function CommentsTab({ comments }) {
     return (
         <List
             itemLayout="vertical"
             dataSource={comments}
             renderItem={(c) => (
                 <List.Item key={c.id}>
-                    <List.Item.Meta
-                        title={<Space><Text strong>Su:</Text><Text>{c.eventTitle}</Text><Text type="secondary">• {c.createdAt}</Text></Space>}
-                        description={<Text>{c.text}</Text>}
-                    />
+                    <Card
+                        hoverable
+                        style={{ borderRadius: 12 }}
+                        onClick={() => c.eventoId && onEventClick?.(c.eventoId)}
+                    >
+                        <Space direction="vertical" size={4} style={{ width: "100%" }}>
+                            {/* 🔹 Intestazione autore */}
+                            <Text strong>
+                                <UserOutlined /> @{c.autore?.username}
+                            </Text>
+
+                            {/* 🔹 Testo del commento */}
+                            <Paragraph style={{ marginBottom: 0 }}>{c.testo}</Paragraph>
+
+                            {/* 🔹 Evento collegato */}
+                            {c.eventoId && (
+                                <Text type="secondary" style={{ fontSize: 13 }}>
+                                    💬 Commento all’evento #{c.eventoId}
+                                </Text>
+                            )}
+
+                            {/* 🔹 Data creazione */}
+                            <Text type="secondary" style={{ fontSize: 12 }}>
+                                <CalendarOutlined />{" "}
+                                {new Date(c.dataCreazione).toLocaleString("it-IT")}
+                            </Text>
+                        </Space>
+                    </Card>
                 </List.Item>
             )}
         />

@@ -2,7 +2,6 @@ import { api } from "./apiClient.js";
 
 export async function checkUsername(username) {
     const { data } = await api.get("/auth/check-username", { params: { username } });
-    // data è già true/false
     return Boolean(data);
 }
 

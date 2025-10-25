@@ -3,7 +3,6 @@ import axios from "axios";
 
 axios.defaults.baseURL = "http://localhost:8080";
 
-// 🔹 Tutte le università
 export function useUniversitaList() {
     return useQuery({
         queryKey: ["universita"],
@@ -11,7 +10,6 @@ export function useUniversitaList() {
     });
 }
 
-// 🔹 Dipartimenti per una università
 export function useDipartimenti(universitaId) {
     return useQuery({
         queryKey: ["dipartimenti", universitaId],

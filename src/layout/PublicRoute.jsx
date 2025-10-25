@@ -6,7 +6,6 @@ import useAuth from "../hooks/useAuth.js";
 export default function PublicRoute({ children }) {
     const { user, loading } = useAuth();
 
-    // 🔄 Spinner durante il caricamento
     if (loading) {
         return (
             <div
@@ -22,9 +21,7 @@ export default function PublicRoute({ children }) {
         );
     }
 
-    // 👤 Già loggato → manda alla home
     if (user) return <Navigate to="/home" replace />;
 
-    // ✅ Non loggato → mostra la pagina (es: login)
     return children;
 }

@@ -27,7 +27,6 @@ function AppLayout() {
             </Sider>
             <Layout>
                 <Header style={{ background: "#fff", padding: "0 16px" }}>
-                    {/* spazio per Search, Avatar, Notifiche */}
                 </Header>
                 <Content style={{ margin: 16 }}>
                     <Outlet />

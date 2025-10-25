@@ -1,40 +1,59 @@
 import React from "react";
-import { Button, Card, Grid, message, Tabs } from "antd";
+import { Button, Card, Grid, message, Tabs, Spin, Alert } from "antd";
 import { useNavigate } from "react-router-dom";
 import { EventsTab, CommentsTab } from "../components/profile/ProfileTabs.jsx";
 import ProfileHeader from "../components/profile/ProfileHeader.jsx";
 import useAuth from "../hooks/useAuth.js";
+import { useUserProfile } from "../queries/users.queries.js";
+import { useCommentsByAuthor } from "../queries/comments.queries.js";
 
 const { useBreakpoint } = Grid;
 
 export default function Profile() {
     const screens = useBreakpoint();
     const navigate = useNavigate();
-    const { logout } = useAuth();
+    const { user, logout } = useAuth();
     const [messageApi, contextHolder] = message.useMessage();
 
-    // Dati utente mock
-    const p = {
-        id: 1,
-        name: "Alex Rossi",
-        username: "alex.rossi",
-        role: "organizer",
-        university: "Università degli Studi di Milano",
-        faculty: "Informatica",
-        bio: "Appassionato di community tech.",
-        stats: { events: 12, comments: 48, rating: 4.6, followers: 203 },
-        events: [],
-        recentComments: [],
-        isSelf: true, // ✅ profilo personale
-    };
+    // ✅ Dati utente e commenti
+    const { data: p, status, error } = useUserProfile(user?.id);
+    const { data: commentsData, isLoading: loadingComments } = useCommentsByAuthor(user?.id);
 
+    // 🔄 Loading profilo
+    if (status === "pending") {
+        return (
+            <div style={{ textAlign: "center", marginTop: 80 }}>
+                <Spin size="large" tip="Caricamento profilo..." />
+            </div>
+        );
+    }
+
+    // ❌ Errore caricamento
+    if (status === "error") {
+        return (
+            <div style={{ padding: 24 }}>
+                <Alert
+                    type="error"
+                    message="Errore nel caricamento del profilo"
+                    description={String(error)}
+                />
+                <Button style={{ marginTop: 16 }} onClick={() => navigate("/home")}>
+                    Torna alla Home
+                </Button>
+            </div>
+        );
+    }
+
+    if (!p) return null;
+
+    // ✅ Tabs (eventi e commenti)
     const tabs = [
         {
             key: "events",
             label: "Eventi creati",
             children: (
                 <EventsTab
-                    events={p.events}
+                    events={p.recentEvents || []}
                     onOpen={(id) => navigate(`/events/${id}`)}
                 />
             ),
@@ -42,7 +61,14 @@ export default function Profile() {
         {
             key: "comments",
             label: "Commenti",
-            children: <CommentsTab comments={p.recentComments} />,
+            children: loadingComments ? (
+                <Spin size="large" tip="Caricamento commenti..." />
+            ) : (
+                <CommentsTab
+                    comments={commentsData || []}
+                    onEventClick={(id) => navigate(`/coments/${id}`)}
+                />
+            ),
         },
     ];
 
@@ -50,7 +76,7 @@ export default function Profile() {
         <div style={{ padding: screens.xs ? 12 : 24 }}>
             {contextHolder}
 
-            {/* Header con logout */}
+            {/* HEADER con titolo e logout */}
             <div
                 style={{
                     display: "flex",
@@ -66,7 +92,7 @@ export default function Profile() {
                     type="primary"
                     onClick={() => {
                         logout();
-                        messageApi.success("✅ Logout effettuato");
+                        messageApi.success("Logout effettuato");
                         navigate("/login");
                     }}
                 >
@@ -74,10 +100,10 @@ export default function Profile() {
                 </Button>
             </div>
 
-            {/* Header profilo utente */}
+            {/* HEADER PROFILO */}
             <ProfileHeader p={p} />
 
-            {/* Tab contenuti */}
+            {/* TABS */}
             <Card variant="outlined" style={{ marginTop: 16, borderRadius: 16 }}>
                 <Tabs
                     defaultActiveKey="events"

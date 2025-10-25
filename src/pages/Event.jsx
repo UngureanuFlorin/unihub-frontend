@@ -8,13 +8,12 @@ import List from "../components/common/List.jsx";
 export default function Event() {
     const navigate = useNavigate();
 
-    // Stato filtri (controllato)
     const [filters, setFilters] = useState({
         search: "",
         category: "",
         university: "",
         faculty: "",
-        dateRange: null, // [dayjs, dayjs] (se vuoi usarlo nella query)
+        dateRange: null,
     });
 
     const params = useMemo(
@@ -23,7 +22,6 @@ export default function Event() {
             category: filters.category,
             university: filters.university,
             faculty: filters.faculty,
-            // se vuoi usare il range: start: filters.dateRange?.[0]?.toISOString(), end: ...
         }),
         [filters]
     );

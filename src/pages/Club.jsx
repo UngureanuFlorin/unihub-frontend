@@ -1,7 +1,8 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { useClubs } from "../queries/clubs.queries";
-import { Card, List, Typography, Skeleton, Empty, Alert, Tag } from "antd";
+import { Card, List, Typography, Skeleton, Empty, Alert, Tag, Button, Space } from "antd";
+import { ArrowLeftOutlined } from "@ant-design/icons";
 
 const { Title, Paragraph, Text } = Typography;
 
@@ -11,17 +12,24 @@ export default function Club() {
 
     return (
         <div style={{ padding: 24 }}>
+            {/* Bottone back */}
+            <Space size="small" style={{ marginBottom: 12 }}>
+                <Button icon={<ArrowLeftOutlined />} onClick={() => navigate("/home")}>
+                    Torna alla home
+                </Button>
+            </Space>
+
             <Title level={2} style={{ marginBottom: 8 }}>
-        <span
-            style={{
-                background: "linear-gradient(90deg, #00d2ff 0%, #3a47d5 100%)",
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-                fontWeight: 800,
-            }}
-        >
-          Club
-        </span>{" "}
+                <span
+                    style={{
+                        background: "linear-gradient(90deg, #00d2ff 0%, #3a47d5 100%)",
+                        WebkitBackgroundClip: "text",
+                        WebkitTextFillColor: "transparent",
+                        fontWeight: 800,
+                    }}
+                >
+                    Club
+                </span>{" "}
                 — scopri le community
             </Title>
             <Text type="secondary">

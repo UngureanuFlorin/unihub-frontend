@@ -1,11 +1,13 @@
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import axios from "axios";
 
-// Imposta la base URL del backend
+/* ================================
+   ⚙️ Configurazione Axios
+================================ */
 axios.defaults.baseURL = "http://localhost:8080";
 
 /* ================================
-   🔹 Formattazione date
+   🕒 Utility: formattazione date
 ================================ */
 function formatPretty(iso) {
     if (!iso) return undefined;
@@ -24,7 +26,7 @@ function formatRaw(iso) {
 }
 
 /* ================================
-   🔹 Mapping DTO → UI shape
+   🔁 Mapping DTO → UI shape
 ================================ */
 function toUiEvent(dto) {
     return {
@@ -55,26 +57,27 @@ function toUiEventDetail(dto) {
         deadlinePretty: formatPretty(dto.deadlineIscrizione),
         average: 0,
         comments: [],
-        userIscritto: dto.userIscritto ?? false, // 👈 AGGIUNGILO QUI
+        userIscritto: dto.userIscritto ?? false, // boolean dal backend
     };
 }
 
-
 /* ================================
-   🔹 Fetch API
+   🌐 Fetch API
 ================================ */
+
+// 🔹 Recupera una pagina di eventi (lista)
 export async function fetchEventsPage({ page = 0, size = 9 }) {
     const res = await axios.get("/api/eventi", { params: { page, size } });
     const data = res.data;
 
-    // Caso: Spring restituisce Page<EventoDTO>
+    // Caso: backend Spring restituisce un oggetto Page<EventoDTO>
     if (data && typeof data === "object" && data.content) {
         const items = data.content.map(toUiEvent);
         const nextPage = data.last ? undefined : data.number + 1;
         return { items, nextPage };
     }
 
-    // Caso: semplice array
+    // Caso: semplice array di eventi
     if (Array.isArray(data)) {
         const all = data.map(toUiEvent);
         const start = page * size;
@@ -86,30 +89,18 @@ export async function fetchEventsPage({ page = 0, size = 9 }) {
     return { items: [], nextPage: undefined };
 }
 
+// 🔹 Recupera un singolo evento per ID (DETTAGLIO)
 export async function fetchEvent(id) {
-    const storedUser = localStorage.getItem("user");
-    let username = null;
-
-    if (storedUser) {
-        try {
-            username = JSON.parse(storedUser).username;
-        } catch {
-            username = null;
-        }
-    }
-
-    const res = await axios.get(`/api/eventi/${id}`, {
-        params: username ? { username } : {},
-    });
-
+    // ✅ niente più params username → chiamata pulita
+    const res = await axios.get(`/api/eventi/${id}`);
     return toUiEventDetail(res.data);
 }
 
-
-
 /* ================================
-   🔹 React Query hooks
+   🎣 React Query hooks
 ================================ */
+
+// 🔹 Hook per lista con infinite scroll
 export function useInfiniteEvents(filters = {}) {
     return useInfiniteQuery({
         queryKey: ["events", filters],
@@ -119,10 +110,11 @@ export function useInfiniteEvents(filters = {}) {
     });
 }
 
+// 🔹 Hook per dettaglio evento
 export function useEvent(id) {
     return useQuery({
         queryKey: ["event", id],
         queryFn: () => fetchEvent(id),
-        enabled: !!id,
+        enabled: !!id, // attiva solo se l'id esiste
     });
 }

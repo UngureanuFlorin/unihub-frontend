@@ -17,7 +17,6 @@ import UserProfile from "../pages/UserProfile.jsx";
 import ClubDetail from "../pages/ClubDetail.jsx";
 import UniversitaList from "../pages/UniversitaList.jsx";
 
-// ✅ Wrapper con spinner per gestire loading globale
 function RouteWithAuth({ children, protect = false }) {
     const { user, loading } = useAuth();
 
@@ -36,7 +35,6 @@ function RouteWithAuth({ children, protect = false }) {
         );
     }
 
-    // Se la rotta è protetta e l’utente non è loggato → login
     if (protect && !user) {
         return <Navigate to="/login" replace />;
     }
@@ -45,7 +43,6 @@ function RouteWithAuth({ children, protect = false }) {
 }
 
 const router = createBrowserRouter([
-    // 🔓 ROTTE PUBBLICHE
     {
         path: "/login",
         element: (
@@ -78,7 +75,6 @@ const router = createBrowserRouter([
             </RouteWithAuth>
         ),
     },
-    // 🔒 ROTTE PROTETTE
     {
         path: "/events/:id",
         element: (
@@ -135,7 +131,6 @@ const router = createBrowserRouter([
             </RouteWithAuth>
         ),
     },
-    // fallback
     { path: "*", element: <Navigate to="/home" replace /> },
 ]);
 

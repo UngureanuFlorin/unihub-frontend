@@ -9,8 +9,8 @@ function toUiUser(card) {
         name: card.name,
         surname: card.surname,
         username: card.username,
-        role: card.role,         // "STUDENT", "ADMIN", ...
-        faculty: card.faculty,   // string | null
+        role: card.role,
+        faculty: card.faculty,
         following: card.following,
     };
 }

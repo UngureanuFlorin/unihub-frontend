@@ -5,7 +5,7 @@ import useAuth from "../hooks/useAuth.js";
 export default function ProtectedRoute({ children, allow = [] }) {
     const { user, loading } = useAuth();
 
-    if (loading) return null; // puoi mettere uno spinner qui se vuoi
+    if (loading) return null
     if (!user) return <Navigate to="/login" replace />;
     if (allow.length && !allow.includes(user.role)) return <Navigate to="/home" replace />;
 

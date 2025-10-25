@@ -30,7 +30,7 @@ function SubmitEvent() {
                 deadlineIscrizione: values.deadline.toISOString(),
             };
 
-            // 🔹 passa username come query param
+            // passa username come query param
             await createEventMutation.mutateAsync({ eventPayload, username });
 
             messageApi.success("✅ Evento creato con successo!");

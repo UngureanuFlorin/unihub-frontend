@@ -31,7 +31,7 @@ export default function UserCard({ u, onOpen }) {
             } else {
                 await followMutation.mutateAsync({ followerId, seguitoId });
             }
-            refetch(); // aggiorna stato
+            refetch();
         } catch {
             // opzionale: messaggio d'errore
         }

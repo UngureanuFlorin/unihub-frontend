@@ -4,25 +4,23 @@ import { message } from "antd";
 
 axios.defaults.baseURL = "http://localhost:8080";
 
-// 🔹 Crea dipartimento
 export function useAddDipartimento(universitaId) {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: ({ nome, descrizione }) =>
+        mutationFn: ({ nome }) =>
             axios.post(`/api/universita/${universitaId}/dipartimenti`, {
                 nome,
-                descrizione,
             }),
         onSuccess: () => {
-            message.success("Dipartimento creato con successo");
+            message.success("Dipartimento aggiunto con successo");
             queryClient.invalidateQueries(["dipartimenti", universitaId]);
         },
-        onError: () => message.error("Errore durante la creazione"),
+        onError: (err) =>
+            message.error(err?.response?.data || "Errore durante la creazione"),
     });
 }
 
-// 🔹 Elimina dipartimento
 export function useDeleteDipartimento(universitaId) {
     const queryClient = useQueryClient();
 
@@ -30,9 +28,10 @@ export function useDeleteDipartimento(universitaId) {
         mutationFn: (dipartimentoId) =>
             axios.delete(`/api/universita/dipartimenti/${dipartimentoId}`),
         onSuccess: () => {
-            message.success("Dipartimento eliminato");
+            message.success("Dipartimento eliminato con successo");
             queryClient.invalidateQueries(["dipartimenti", universitaId]);
         },
-        onError: () => message.error("Errore durante l’eliminazione"),
+        onError: (err) =>
+            message.error(err?.response?.data || "Errore durante l’eliminazione"),
     });
 }

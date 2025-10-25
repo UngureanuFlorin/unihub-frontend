@@ -1,5 +1,5 @@
-import React, {useMemo, useState} from "react";
-import {ProFormSelect, ProFormText} from "@ant-design/pro-components";
+import React, { useState, useMemo } from "react";
+import { ProFormSelect, ProFormText } from "@ant-design/pro-components";
 import {
     ApartmentOutlined,
     BankOutlined,
@@ -8,46 +8,42 @@ import {
     MailOutlined,
     UserOutlined,
 } from "@ant-design/icons";
-import {useQueryClient} from "@tanstack/react-query";
-import {checkEmail, checkUsername} from "../../api/checks.api.js";
+import { useQueryClient } from "@tanstack/react-query";
+import { checkEmail, checkUsername } from "../../api/checks.api.js";
+import { useUniversitaList, useDipartimenti } from "../../queries/universita.queries.js";
 
-export default function RegisterFields({ universitaOptions }) {
+export default function RegisterFields() {
     const queryClient = useQueryClient();
     const [selectedUniId, setSelectedUniId] = useState(undefined);
 
-    // Fallback statico ora, ma puoi passare universitaOptions via props o sostituire con fetch API
+    // 🔹 Carico università dal backend
+    const { data: universitaList = [], isLoading: isLoadingUni } = useUniversitaList();
+
+    // 🔹 Carico dipartimenti (solo se un'università è selezionata)
+    const { data: dipList = [], isLoading: isLoadingDip } = useDipartimenti(selectedUniId);
+
+    // 🔹 Mappo i dati per le select
     const uniOptions = useMemo(
         () =>
-            universitaOptions?.length
-                ? universitaOptions
-                : [
-                    { label: "Università di Ferrara (UNIFE)", value: 1 },
-                    { label: "Università di Bologna (UNIBO)", value: 2 },
-                ],
-        [universitaOptions]
+            universitaList.map((u) => ({
+                label: u.nome,
+                value: u.id,
+            })),
+        [universitaList]
     );
 
-    // TODO: sostituisci con la tua API quando pronta
-    // es.: const { data } = await api.get(`/universita/${uniId}/dipartimenti`);
-    async function fetchDipartimentiByUni(uniId) {
-        if (Number(uniId) === 1) {
-            return [
-                { label: "Ingegneria", value: 1 },
-                { label: "Economia", value: 2 },
-            ];
-        }
-        if (Number(uniId) === 2) {
-            return [
-                { label: "Informatica", value: 3 },
-                { label: "Fisica", value: 4 },
-            ];
-        }
-        return [];
-    }
+    const dipOptions = useMemo(
+        () =>
+            dipList.map((d) => ({
+                label: d.nome,
+                value: d.id,
+            })),
+        [dipList]
+    );
 
     return (
         <>
-            {/* name */}
+            {/* Nome */}
             <ProFormText
                 name="name"
                 fieldProps={{ size: "large", prefix: <UserOutlined className="prefixIcon" /> }}
@@ -55,7 +51,7 @@ export default function RegisterFields({ universitaOptions }) {
                 rules={[{ required: true, message: "Inserisci il nome!" }]}
             />
 
-            {/* surname */}
+            {/* Cognome */}
             <ProFormText
                 name="surname"
                 fieldProps={{ size: "large", prefix: <UserOutlined className="prefixIcon" /> }}
@@ -63,7 +59,7 @@ export default function RegisterFields({ universitaOptions }) {
                 rules={[{ required: true, message: "Inserisci il cognome!" }]}
             />
 
-            {/* studentId */}
+            {/* Matricola */}
             <ProFormText
                 name="studentId"
                 fieldProps={{ size: "large", prefix: <IdcardOutlined className="prefixIcon" /> }}
@@ -71,7 +67,7 @@ export default function RegisterFields({ universitaOptions }) {
                 rules={[{ required: true, message: "Inserisci la matricola!" }]}
             />
 
-            {/* username + validator remoto */}
+            {/* Username */}
             <ProFormText
                 name="username"
                 fieldProps={{ size: "large", prefix: <UserOutlined className="prefixIcon" /> }}
@@ -85,7 +81,7 @@ export default function RegisterFields({ universitaOptions }) {
                             if (!value) return Promise.resolve();
                             const exists = await queryClient.fetchQuery({
                                 queryKey: ["check-username", value],
-                                queryFn: () => checkUsername(value), // true = già in uso
+                                queryFn: () => checkUsername(value),
                                 staleTime: 5 * 60 * 1000,
                                 retry: false,
                             });
@@ -97,7 +93,7 @@ export default function RegisterFields({ universitaOptions }) {
                 ]}
             />
 
-            {/* email + validator remoto */}
+            {/* Email */}
             <ProFormText
                 name="email"
                 fieldProps={{ size: "large", prefix: <MailOutlined className="prefixIcon" /> }}
@@ -112,7 +108,7 @@ export default function RegisterFields({ universitaOptions }) {
                             if (!value) return Promise.resolve();
                             const exists = await queryClient.fetchQuery({
                                 queryKey: ["check-email", value],
-                                queryFn: () => checkEmail(value), // true = già registrata
+                                queryFn: () => checkEmail(value),
                                 staleTime: 5 * 60 * 1000,
                                 retry: false,
                             });
@@ -124,12 +120,13 @@ export default function RegisterFields({ universitaOptions }) {
                 ]}
             />
 
-            {/* universitaId (select) */}
+            {/* Università */}
             <ProFormSelect
                 name="universitaId"
                 label="Università"
                 placeholder="Seleziona l'università"
                 options={uniOptions}
+                loading={isLoadingUni}
                 rules={[{ required: true, message: "Seleziona l'università!" }]}
                 fieldProps={{
                     size: "large",
@@ -138,40 +135,45 @@ export default function RegisterFields({ universitaOptions }) {
                 }}
             />
 
-            {/* dipartimentoId (select dipendente) */}
+            {/* Dipartimento */}
             <ProFormSelect
                 name="dipartimentoId"
                 label="Dipartimento"
-                placeholder="Seleziona il dipartimento"
+                placeholder={
+                    selectedUniId
+                        ? "Seleziona il dipartimento"
+                        : "Seleziona prima un'università"
+                }
+                options={dipOptions}
+                loading={isLoadingDip}
+                disabled={!selectedUniId}
                 rules={[{ required: true, message: "Seleziona il dipartimento!" }]}
                 fieldProps={{
                     size: "large",
                     prefix: <ApartmentOutlined />,
-                    disabled: !selectedUniId,
                 }}
-                // usa request per caricare le opzioni in base all'università selezionata
-                request={async () => {
-                    if (!selectedUniId) return [];
-                    return await fetchDipartimentiByUni(Number(selectedUniId));
-                }}
-                // forza il refresh quando cambia l'università
-                params={{ selectedUniId }}
             />
 
-            {/* password */}
+            {/* Password */}
             <ProFormText.Password
                 name="password"
-                fieldProps={{ size: "large", prefix: <LockOutlined className="prefixIcon" /> }}
+                fieldProps={{
+                    size: "large",
+                    prefix: <LockOutlined className="prefixIcon" />,
+                }}
                 placeholder="Password"
                 formItemProps={{ hasFeedback: true }}
                 rules={[{ required: true, message: "Inserisci la password!" }]}
             />
 
-            {/* confirm */}
+            {/* Conferma Password */}
             <ProFormText.Password
                 name="confirm"
                 dependencies={["password"]}
-                fieldProps={{ size: "large", prefix: <LockOutlined className="prefixIcon" /> }}
+                fieldProps={{
+                    size: "large",
+                    prefix: <LockOutlined className="prefixIcon" />,
+                }}
                 placeholder="Conferma password"
                 formItemProps={{ hasFeedback: true }}
                 validateTrigger={["onChange", "onBlur", "onSubmit"]}

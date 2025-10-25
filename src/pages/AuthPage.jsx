@@ -15,14 +15,12 @@ export default function AuthPage() {
     const loginMutation = useAuthLogin();
     const registerMutation = useAuthRegister();
 
-    // ✅ fornisce il contesto per i messaggi in questa pagina
     const [messageApi, contextHolder] = message.useMessage();
 
     const handleLoginFinish = async (values) => {
         try {
             const res = await loginMutation.mutateAsync(values);
 
-            // ✅ salva le info dell’utente loggato
             const userData = {
                 id: res.id,
                 username: res.username,
@@ -53,7 +51,6 @@ export default function AuthPage() {
 
     return (
         <>
-            {/* 👇 deve essere renderizzato per abilitare i message in questa pagina */}
             {contextHolder}
 
             <AuthLayout

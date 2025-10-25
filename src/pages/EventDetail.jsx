@@ -1,7 +1,9 @@
-import React from "react";
+import React, { useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useEvent } from "../queries/events.queries";
 import { useIscriviEvento, useDisiscriviEvento } from "../queries/events.mutations";
+import { useCommentsByEvento } from "../queries/comments.queries";
+import { useCreateComment, useDeleteComment } from "../queries/comments.mutations";
 import {
     Card,
     Typography,
@@ -9,12 +11,14 @@ import {
     Tag,
     Skeleton,
     Alert,
-    Rate,
     Divider,
     Button,
     Progress,
     Tooltip,
     message,
+    Input,
+    List,
+    Popconfirm,
 } from "antd";
 import {
     ArrowLeftOutlined,
@@ -26,47 +30,41 @@ import {
     HourglassOutlined,
     CheckCircleOutlined,
     CloseCircleOutlined,
+    SendOutlined,
+    DeleteOutlined,
 } from "@ant-design/icons";
 import dayjs from "dayjs";
 
 const { Title, Paragraph, Text } = Typography;
+const { TextArea } = Input;
 
 export default function EventDetail() {
     const { id } = useParams();
     const { data: ev, status, error, refetch } = useEvent(id);
     const iscriviMutation = useIscriviEvento();
     const disiscriviMutation = useDisiscriviEvento();
+
+    // 🗨️ Commenti
+    const { data: comments = [], refetch: refetchComments, isLoading: loadingComments } =
+        useCommentsByEvento(id);
+    const createComment = useCreateComment();
+    const deleteComment = useDeleteComment();
+
+    const [newComment, setNewComment] = useState("");
     const [messageApi, contextHolder] = message.useMessage();
+    const user = JSON.parse(localStorage.getItem("user"));
 
-    // Loading e error
-    if (status === "pending") {
+    if (status === "pending") return <Skeleton active paragraph={{ rows: 6 }} />;
+    if (status === "error")
         return (
-            <div style={{ padding: 24 }}>
-                <Skeleton active paragraph={{ rows: 6 }} />
-            </div>
+            <Alert
+                type="error"
+                message="Errore nel caricamento dell'evento"
+                description={String(error)}
+            />
         );
-    }
-
-    if (status === "error") {
-        return (
-            <div style={{ padding: 24 }}>
-                <Alert
-                    type="error"
-                    message="Errore nel caricamento dell'evento"
-                    description={String(error)}
-                />
-                <div style={{ marginTop: 12 }}>
-                    <Link to="/events">
-                        <Button icon={<ArrowLeftOutlined />}>Torna agli eventi</Button>
-                    </Link>
-                </div>
-            </div>
-        );
-    }
-
     if (!ev) return null;
 
-    // Logica stato iscrizioni
     const now = dayjs();
     const deadline = ev.deadlinePretty ? dayjs(ev.deadlinePretty) : null;
 
@@ -89,40 +87,75 @@ export default function EventDetail() {
         ? ((ev.slotsTotal - ev.slotsLeft) / ev.slotsTotal) * 100
         : 0;
 
-    // 🔹 Gestione iscrizione
+    // ➕ invio nuovo commento
+    const handleAddComment = async () => {
+        if (!user) {
+            messageApi.error("Devi essere loggato per commentare!");
+            return;
+        }
+
+        if (!newComment.trim()) {
+            messageApi.warning("Scrivi qualcosa prima di inviare.");
+            return;
+        }
+
+        try {
+            await createComment.mutateAsync({
+                testo: newComment,
+                eventoId: ev.id,
+                autore: { id: user.id },
+            });
+            setNewComment("");
+            messageApi.success("Commento aggiunto!");
+            refetchComments();
+            // eslint-disable-next-line no-unused-vars
+        } catch (err) {
+            messageApi.error("Errore durante l'invio del commento");
+        }
+    };
+
+    // 🗑️ elimina commento
+    const handleDeleteComment = async (commentId) => {
+        try {
+            await deleteComment.mutateAsync({ commentId, eventoId: ev.id });
+            messageApi.success("Commento eliminato!");
+        } catch {
+            messageApi.error("Errore durante l'eliminazione del commento");
+        }
+    };
+
+    // ISCRIZIONE / DISISCRIZIONE
     const handleIscrizione = async () => {
-        const userData = JSON.parse(localStorage.getItem("user"));
-        if (!userData) {
-            messageApi.error("⚠️ Devi essere loggato per iscriverti!");
+        if (!user) {
+            messageApi.error("Devi essere loggato per iscriverti!");
             return;
         }
 
         try {
             await iscriviMutation.mutateAsync({
                 eventoId: ev.id,
-                studenteId: userData.id,
+                studenteId: user.id,
             });
-            messageApi.success("✅ Ti sei iscritto all'evento!");
-            refetch(); // 👈 mantiene i dati coerenti (aggiorna posti e stato)
+            messageApi.success("Ti sei iscritto all'evento!");
+            refetch();
         } catch (err) {
             messageApi.error(err?.response?.data || "Errore durante l'iscrizione");
         }
     };
 
     const handleDisiscrizione = async () => {
-        const userData = JSON.parse(localStorage.getItem("user"));
-        if (!userData) {
-            messageApi.error("⚠️ Devi essere loggato per disiscriverti!");
+        if (!user) {
+            messageApi.error("Devi essere loggato per disiscriverti!");
             return;
         }
 
         try {
             await disiscriviMutation.mutateAsync({
                 eventoId: ev.id,
-                studenteId: userData.id,
+                studenteId: user.id,
             });
-            messageApi.success("❌ Ti sei disiscritto dall'evento");
-            refetch(); // 👈 aggiorna subito
+            messageApi.success("Ti sei disiscritto dall'evento");
+            refetch();
         } catch (err) {
             messageApi.error(err?.response?.data || "Errore durante la disiscrizione");
         }
@@ -132,11 +165,9 @@ export default function EventDetail() {
         <div style={{ padding: 24 }}>
             {contextHolder}
 
-            <Space size="small" style={{ marginBottom: 12 }}>
-                <Link to="/events">
-                    <Button icon={<ArrowLeftOutlined />}>Torna alla lista</Button>
-                </Link>
-            </Space>
+            <Link to="/events">
+                <Button icon={<ArrowLeftOutlined />}>Torna alla lista</Button>
+            </Link>
 
             <Card
                 bordered={false}
@@ -144,13 +175,11 @@ export default function EventDetail() {
                     borderRadius: 12,
                     boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
                     background: "rgba(255,255,255,0.95)",
+                    marginTop: 12,
                 }}
             >
-                {/* TITOLI + STATO */}
-                <Space
-                    align="center"
-                    style={{ justifyContent: "space-between", width: "100%" }}
-                >
+                {/* Titolo e stato */}
+                <Space align="center" style={{ justifyContent: "space-between", width: "100%" }}>
                     <Title level={2} style={{ marginBottom: 8 }}>
                         {ev.title}
                     </Title>
@@ -159,7 +188,7 @@ export default function EventDetail() {
                     </Tag>
                 </Space>
 
-                {/* INFO GENERALI */}
+                {/* Info evento */}
                 <Space wrap size="middle" style={{ marginBottom: 16 }}>
                     {ev.datePretty && (
                         <Tooltip title="Data inizio evento">
@@ -187,19 +216,16 @@ export default function EventDetail() {
                     )}
                 </Space>
 
-                {/* DESCRIZIONE */}
                 <Paragraph style={{ fontSize: 16, marginBottom: 16 }}>
                     {ev.description || ev.summary}
                 </Paragraph>
 
-                {/* DEADLINE */}
                 {ev.deadlinePretty && (
                     <Text type="secondary" style={{ display: "block", marginBottom: 8 }}>
                         <HourglassOutlined /> Iscrizioni entro: <b>{ev.deadlinePretty}</b>
                     </Text>
                 )}
 
-                {/* POSTI DISPONIBILI */}
                 {ev.slotsTotal && (
                     <>
                         <Divider />
@@ -224,9 +250,8 @@ export default function EventDetail() {
                     </>
                 )}
 
-                {/* BOTTONE ISCRIZIONE/DISISCRIZIONE */}
                 <Divider />
-                <div style={{ textAlign: "center" }}>
+                <div style={{ textAlign: "center", marginBottom: 16 }}>
                     {ev.userIscritto ? (
                         <Button
                             danger
@@ -242,11 +267,7 @@ export default function EventDetail() {
                             type="primary"
                             size="large"
                             icon={<CheckCircleOutlined />}
-                            disabled={
-                                stato !== "Iscrizioni aperte" ||
-                                iscriviMutation.isPending ||
-                                ev.userIscritto
-                            }
+                            disabled={stato !== "Iscrizioni aperte" || iscriviMutation.isPending}
                             loading={iscriviMutation.isPending}
                             onClick={handleIscrizione}
                         >
@@ -255,30 +276,66 @@ export default function EventDetail() {
                     )}
                 </div>
 
-                {/* COMMENTI */}
-                {Array.isArray(ev.comments) && (
-                    <>
-                        <Divider />
-                        <Title level={4} style={{ marginBottom: 12 }}>
-                            Commenti
-                        </Title>
-                        {ev.comments.length === 0 ? (
-                            <Text type="secondary">Ancora nessun commento.</Text>
-                        ) : (
-                            ev.comments.map((c) => (
+                {/* Commenti */}
+                <Divider />
+                <Title level={4}>Commenti</Title>
+
+                <Space.Compact style={{ width: "100%", marginBottom: 12 }}>
+                    <TextArea
+                        rows={2}
+                        value={newComment}
+                        onChange={(e) => setNewComment(e.target.value)}
+                        placeholder="Scrivi un commento..."
+                    />
+                    <Button
+                        type="primary"
+                        icon={<SendOutlined />}
+                        onClick={handleAddComment}
+                        loading={createComment.isPending}
+                    >
+                        Invia
+                    </Button>
+                </Space.Compact>
+
+                {loadingComments ? (
+                    <Skeleton active paragraph={{ rows: 3 }} />
+                ) : comments.length === 0 ? (
+                    <Text type="secondary">Nessun commento ancora.</Text>
+                ) : (
+                    <List
+                        dataSource={comments}
+                        renderItem={(c) => (
+                            <List.Item
+                                key={c.id}
+                                actions={
+                                    user && user.id === c.autore?.id
+                                        ? [
+                                            <Popconfirm
+                                                title="Elimina commento?"
+                                                okText="Sì"
+                                                cancelText="No"
+                                                onConfirm={() => handleDeleteComment(c.id)}
+                                            >
+                                                <Button
+                                                    type="text"
+                                                    danger
+                                                    icon={<DeleteOutlined />}
+                                                />
+                                            </Popconfirm>,
+                                        ]
+                                        : []
+                                }
+                            >
                                 <Card
-                                    key={c.id}
                                     size="small"
-                                    style={{ marginBottom: 8, borderRadius: 8 }}
+                                    style={{ width: "100%", borderRadius: 8 }}
+                                    title={<Text strong>@{c.autoreUsername || "utente"}</Text>}
                                 >
-                                    <Space direction="vertical" size={0}>
-                                        <Text strong>{c.author || "Utente"}</Text>
-                                        <Text>{c.text}</Text>
-                                    </Space>
+                                    {c.testo}
                                 </Card>
-                            ))
+                            </List.Item>
                         )}
-                    </>
+                    />
                 )}
             </Card>
         </div>
