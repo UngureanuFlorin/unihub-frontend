@@ -254,18 +254,6 @@ export default function EventDetail() {
                         </Button>
                     )}
                 </div>
-                <Divider />
-
-                {/* VOTO MEDIO */}
-                <Space align="center" size="large" style={{ marginBottom: 16 }}>
-                    <div>
-                        <Text type="secondary">Voto medio</Text>
-                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                            <Rate disabled value={ev.average || 0} />
-                            <Text strong>{ev.average ? ev.average.toFixed(1) : "—"}</Text>
-                        </div>
-                    </div>
-                </Space>
 
                 {/* COMMENTI */}
                 {Array.isArray(ev.comments) && (

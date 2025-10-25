@@ -1,4 +1,3 @@
-// pages/Event.jsx
 import React, { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useInfiniteEvents } from "../queries/events.queries";

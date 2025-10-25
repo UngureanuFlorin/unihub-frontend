@@ -14,6 +14,8 @@ import useAuth from "../hooks/useAuth.js";
 import Club from "../pages/Club.jsx";
 import People from "../pages/People.jsx";
 import UserProfile from "../pages/UserProfile.jsx";
+import ClubDetail from "../pages/ClubDetail.jsx";
+import UniversitaList from "../pages/UniversitaList.jsx";
 
 // ✅ Wrapper con spinner per gestire loading globale
 function RouteWithAuth({ children, protect = false }) {
@@ -86,6 +88,14 @@ const router = createBrowserRouter([
         ),
     },
     {
+        path: "/clubs/:id",
+        element: (
+            <RouteWithAuth protect>
+                <ClubDetail />
+            </RouteWithAuth>
+        ),
+    },
+    {
         path: "/create/event",
         element: (
             <RouteWithAuth protect>
@@ -114,6 +124,14 @@ const router = createBrowserRouter([
         element: (
             <RouteWithAuth protect>
                 <UserProfile />
+            </RouteWithAuth>
+        ),
+    },
+    {
+        path: "/universita",
+        element: (
+            <RouteWithAuth protect>
+                <UniversitaList />
             </RouteWithAuth>
         ),
     },

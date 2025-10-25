@@ -1,69 +1,80 @@
-import React, { useMemo, useState } from "react";
+import React from "react";
 import { useNavigate } from "react-router-dom";
-import { useInfiniteEvents } from "../queries/events.queries";
-import Hero from "../components/common/Hero.jsx";
-import Filters from "../components/common/Filters.jsx";
-import List from "../components/common/List.jsx";
+import { useClubs } from "../queries/clubs.queries";
+import { Card, List, Typography, Skeleton, Empty, Alert, Tag } from "antd";
+
+const { Title, Paragraph, Text } = Typography;
 
 export default function Club() {
     const navigate = useNavigate();
-
-    // Stato filtri (controllato)
-    const [filters, setFilters] = useState({
-        search: "",
-        category: "",
-        university: "",
-        faculty: "",
-        dateRange: null, // [dayjs, dayjs] (se vuoi usarlo nella query)
-    });
-
-    const params = useMemo(
-        () => ({
-            search: filters.search,
-            category: filters.category,
-            university: filters.university,
-            faculty: filters.faculty,
-            // se vuoi usare il range: start: filters.dateRange?.[0]?.toISOString(), end: ...
-        }),
-        [filters]
-    );
-
-    const {
-        data,
-        fetchNextPage,
-        hasNextPage,
-        isFetchingNextPage,
-        isLoading,
-        isError,
-    } = useInfiniteEvents(params);
-
-    const items = data?.pages?.flatMap((p) => p.items) ?? [];
+    const { data, status, error } = useClubs();
 
     return (
         <div style={{ padding: 24 }}>
-            <Hero
-                titleGradientText="UniHub"
-                titleSuffix="un club per ogni attività"
-                subtitle="Filtra per ateneo, categoria e data. Clicca un evento per i dettagli."
-                onSearch={(q) => setFilters((f) => ({ ...f, search: q }))}
-            />
+            <Title level={2} style={{ marginBottom: 8 }}>
+        <span
+            style={{
+                background: "linear-gradient(90deg, #00d2ff 0%, #3a47d5 100%)",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+                fontWeight: 800,
+            }}
+        >
+          Club
+        </span>{" "}
+                — scopri le community
+            </Title>
+            <Text type="secondary">
+                Sfoglia i club dell’ateneo e apri il dettaglio per informazioni e membri.
+            </Text>
 
-            <Filters
-                value={filters}
-                onChange={setFilters}
-                onQuickTag={(tag) => setFilters((f) => ({ ...f, search: tag }))}
-            />
+            <div style={{ marginTop: 16 }}>
+                {status === "pending" && (
+                    <Card>
+                        <Skeleton active />
+                    </Card>
+                )}
 
-            <List
-                items={items}
-                isLoading={isLoading}
-                isError={isError}
-                grid={{ gutter: 16, xs: 1, sm: 2, md: 2, lg: 3, xl: 3, xxl: 3 }}
-                onItemClick={(id) => navigate(`/events/${id}`)}
-                hasNextPage={!!hasNextPage}
-                isFetchingNextPage={isFetchingNextPage}
-                onLoadMore={fetchNextPage}
-            />
+                {status === "error" && (
+                    <Alert
+                        type="error"
+                        message="Errore nel caricamento dei club"
+                        description={String(error)}
+                    />
+                )}
+
+                {status === "success" && (!data || data.length === 0) && (
+                    <Card>
+                        <Empty description="Nessun club trovato" />
+                    </Card>
+                )}
+
+                {status === "success" && data && data.length > 0 && (
+                    <List
+                        grid={{ gutter: 16, xs: 1, sm: 2, md: 3, lg: 4 }}
+                        dataSource={data}
+                        renderItem={(c) => (
+                            <List.Item key={c.id}>
+                                <Card
+                                    hoverable
+                                    onClick={() => navigate(`/clubs/${c.id}`)}
+                                    style={{ borderRadius: 12, height: "100%" }}
+                                    bodyStyle={{ display: "flex", flexDirection: "column", gap: 8 }}
+                                    title={<Text strong>{c.name}</Text>}
+                                    extra={<Tag color="geekblue">Club</Tag>}
+                                >
+                                    <Paragraph
+                                        ellipsis={{ rows: 3 }}
+                                        style={{ marginBottom: 0, minHeight: 72 }}
+                                    >
+                                        {c.description}
+                                    </Paragraph>
+                                </Card>
+                            </List.Item>
+                        )}
+                    />
+                )}
+            </div>
         </div>
     );
 }

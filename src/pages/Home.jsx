@@ -15,7 +15,7 @@ import {
     CalendarOutlined,
     PlusCircleOutlined,
     CompassOutlined,
-    UserOutlined,
+    UserOutlined, ArrowLeftOutlined,
 } from "@ant-design/icons";
 import { Link, useNavigate } from "react-router-dom";
 import useAuth from "../hooks/useAuth.js";
@@ -25,6 +25,7 @@ const { Title, Paragraph, Text } = Typography;
 function Home() {
     const navigate = useNavigate();
     const { user } = useAuth();
+    const isSuperAdmin = user?.role === "SUPERADMIN";
     return (
         <div
             style={{
@@ -220,15 +221,31 @@ function Home() {
                             </Link>
                         </Col>
                         <Col xs={24} md={8}>
-                            <Card hoverable style={{ borderRadius: 12 }}>
-                                <Space direction="vertical" size={6}>
-                                    <Text strong>Diventa organizzatore</Text>
-                                    <Text type="secondary">
-                                        Proponi un evento e sali di ruolo.
-                                    </Text>
-                                </Space>
-                            </Card>
+                            <Link to="/users">
+                                <Card hoverable style={{ borderRadius: 12 }}>
+                                    <Space direction="vertical" size={6}>
+                                        <Text strong>Segui i tuoi colleghi</Text>
+                                        <Text type="secondary">
+                                            Segui un collega per vedere gli eventi che pubblica!
+                                        </Text>
+                                    </Space>
+                                </Card>
+                            </Link>
                         </Col>
+                        {isSuperAdmin && (
+                            <Col xs={24} md={8}>
+                                <Link to="/universita">
+                                    <Card hoverable style={{ borderRadius: 12 }}>
+                                        <Space direction="vertical" size={6}>
+                                            <Text strong>Modifica</Text>
+                                            <Text type="secondary">
+                                                Aggiungi ed elimina universita e dipartimenti
+                                            </Text>
+                                        </Space>
+                                    </Card>
+                                </Link>
+                            </Col>
+                        )}
                     </Row>
                 </Col>
             </Row>
