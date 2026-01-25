@@ -1,14 +1,12 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import axios from "axios";
+import { api } from "../api/apiClient.js";
 
 export function useCreateComment() {
     const queryClient = useQueryClient();
 
     return useMutation({
         mutationFn: async (commento) => {
-            const { data } = await axios.post("/api/commenti", commento, {
-                headers: { "Content-Type": "application/json" },
-            });
+            const { data } = await api.post("/commenti", commento);
             return data;
         },
         onSuccess: (_, variables) => {
@@ -21,7 +19,7 @@ export function useDeleteComment() {
 
     return useMutation({
         mutationFn: async ({ commentId, eventoId }) => {
-            await axios.delete(`/api/commenti/${commentId}`);
+            await api.delete(`/commenti/${commentId}`);
             return { commentId, eventoId };
         },
         onSuccess: (_, { eventoId }) => {

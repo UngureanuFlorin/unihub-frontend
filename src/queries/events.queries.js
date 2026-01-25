@@ -1,10 +1,5 @@
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
-import axios from "axios";
-
-/* ================================
-   ⚙️ Configurazione Axios
-================================ */
-axios.defaults.baseURL = "http://localhost:8080";
+import { api } from "../api/apiClient.js";
 
 /* ================================
    🕒 Utility: formattazione date
@@ -67,7 +62,7 @@ function toUiEventDetail(dto) {
 
 // 🔹 Recupera una pagina di eventi (lista)
 export async function fetchEventsPage({ page = 0, size = 9 }) {
-    const res = await axios.get("/api/eventi", { params: { page, size } });
+    const res = await api.get("/eventi", { params: { page, size } });
     const data = res.data;
 
     // Caso: backend Spring restituisce un oggetto Page<EventoDTO>
@@ -92,7 +87,7 @@ export async function fetchEventsPage({ page = 0, size = 9 }) {
 // 🔹 Recupera un singolo evento per ID (DETTAGLIO)
 export async function fetchEvent(id) {
     // ✅ niente più params username → chiamata pulita
-    const res = await axios.get(`/api/eventi/${id}`);
+    const res = await api.get(`/eventi/${id}`);
     return toUiEventDetail(res.data);
 }
 

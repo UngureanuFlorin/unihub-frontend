@@ -1,15 +1,13 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import axios from "axios";
+import { api } from "../api/apiClient.js";
 import { message } from "antd";
-
-axios.defaults.baseURL = "http://localhost:8080";
 
 export function useAddDipartimento(universitaId) {
     const queryClient = useQueryClient();
 
     return useMutation({
         mutationFn: ({ nome }) =>
-            axios.post(`/api/universita/${universitaId}/dipartimenti`, {
+            api.post(`/universita/${universitaId}/dipartimenti`, {
                 nome,
             }),
         onSuccess: () => {
@@ -26,7 +24,7 @@ export function useDeleteDipartimento(universitaId) {
 
     return useMutation({
         mutationFn: (dipartimentoId) =>
-            axios.delete(`/api/universita/dipartimenti/${dipartimentoId}`),
+            api.delete(`/universita/dipartimenti/${dipartimentoId}`),
         onSuccess: () => {
             message.success("Dipartimento eliminato con successo");
             queryClient.invalidateQueries(["dipartimenti", universitaId]);

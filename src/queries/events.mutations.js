@@ -1,18 +1,14 @@
-import {useMutation, useQueryClient} from "@tanstack/react-query";
-import axios from "axios";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { api } from "../api/apiClient.js";
 
 export function useCreateEvent() {
     return useMutation({
         mutationFn: async ({ eventPayload, username }) => {
             console.log("🔹 createEvent chiamato con:", { username, eventPayload });
 
-            const res = await axios.post(
-                `http://localhost:8080/api/eventi/crea?username=${username}`,
-                eventPayload,
-                {
-                    headers: { "Content-Type": "application/json" },
-                }
-            );
+            const res = await api.post("/eventi/crea", eventPayload, {
+                params: { username },
+            });
 
             return res.data;
         },
@@ -25,7 +21,7 @@ export function useIscriviEvento() {
 
     return useMutation({
         mutationFn: async ({ eventoId, studenteId }) => {
-            const res = await axios.post(`/api/eventi/${eventoId}/iscrivi/${studenteId}`);
+            const res = await api.post(`/eventi/${eventoId}/iscrivi/${studenteId}`);
             return res.data;
         },
         onSuccess: (_, variables) => {
@@ -38,7 +34,7 @@ export function useIscriviEvento() {
 export function useDisiscriviEvento() {
     return useMutation({
         mutationFn: async ({ eventoId, studenteId }) => {
-            const res = await axios.post(`/api/eventi/${eventoId}/disiscrivi/${studenteId}`);
+            const res = await api.post(`/eventi/${eventoId}/disiscrivi/${studenteId}`);
             return res.data;
         },
     });

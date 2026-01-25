@@ -1,9 +1,8 @@
-import {useMutation, useQuery} from "@tanstack/react-query";
-import axios from "axios";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { api } from "../api/apiClient.js";
 import dayjs from "dayjs";
 import "dayjs/locale/it";
 
-axios.defaults.baseURL = "http://localhost:8080";
 dayjs.locale("it");
 
 // Helpers
@@ -32,12 +31,12 @@ const toUiClubDetail = (d) => ({
 
 // API calls
 async function fetchClubs() {
-    const res = await axios.get("/api/club/getAllClubs");
+    const res = await api.get("/club/getAllClubs");
     return Array.isArray(res.data) ? res.data.map(toUiClub) : [];
 }
 
 async function fetchClub(id) {
-    const res = await axios.get(`/api/club/${id}`);
+    const res = await api.get(`/club/${id}`);
     return toUiClubDetail(res.data);
 }
 
@@ -61,7 +60,7 @@ export function useJoinClub() {
     return useMutation({
         mutationKey: ["joinClub"],
         mutationFn: async ({ clubId, userId }) => {
-            const res = await axios.post(`/api/club/${clubId}/iscrivi/${userId}`);
+            const res = await api.post(`/club/${clubId}/iscrivi/${userId}`);
             return res.data;
         },
     });
@@ -71,9 +70,8 @@ export function useLeaveClub() {
     return useMutation({
         mutationKey: ["leaveClub"],
         mutationFn: async ({ clubId, userId }) => {
-            const res = await axios.post(`/api/club/${clubId}/disiscrivi/${userId}`);
+            const res = await api.post(`/club/${clubId}/disiscrivi/${userId}`);
             return res.data;
         },
     });
 }
-

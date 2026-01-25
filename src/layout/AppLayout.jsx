@@ -7,7 +7,9 @@ const { Header, Sider, Content } = Layout;
 
 function AppLayout() {
     const { pathname } = useLocation();
-    const selected = pathname.split("/")[1] || "home";
+    const selected = pathname.startsWith("/create/event")
+        ? "create-event"
+        : pathname.split("/")[1] || "home";
 
     return (
         <Layout style={{ minHeight: "100vh" }}>
@@ -18,9 +20,9 @@ function AppLayout() {
                     mode="inline"
                     selectedKeys={[selected]}
                     items={[
-                        { key: "home", icon: <HomeOutlined />, label: <Link to="/">Home</Link> },
+                        { key: "home", icon: <HomeOutlined />, label: <Link to="/home">Home</Link> },
                         { key: "events", icon: <CalendarOutlined />, label: <Link to="/events">Eventi</Link> },
-                        { key: "submit-event", icon: <PlusCircleOutlined />, label: <Link to="/submit-event">Proponi</Link> },
+                        { key: "create-event", icon: <PlusCircleOutlined />, label: <Link to="/create/event">Proponi</Link> },
                         { key: "moderation", icon: <SafetyOutlined />, label: <Link to="/moderation/queue">Moderazione</Link> },
                     ]}
                 />

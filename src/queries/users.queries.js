@@ -1,7 +1,5 @@
-import {useInfiniteQuery, useQuery} from "@tanstack/react-query";
-import axios from "axios";
-
-axios.defaults.baseURL = "http://localhost:8080";
+import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
+import { api } from "../api/apiClient.js";
 
 function toUiUser(card) {
     return {
@@ -20,7 +18,7 @@ async function fetchUsersPage({ pageParam = 0, size = 12, q }) {
     const params = { currentUserId: me?.id, page: pageParam, size };
     if (q && q.trim()) params.q = q.trim();
 
-    const res = await axios.get("/api/users", { params });
+    const res = await api.get("/users", { params });
     const data = res.data; // Spring Page<UserCardDTO>
 
     const items = (data?.content || []).map(toUiUser);
@@ -38,7 +36,7 @@ export function useInfiniteUsers(filters = {}) {
 }
 
 export async function fetchUserProfile(userId, viewerId) {
-    const res = await axios.get(`/api/users/${userId}`, { params: { viewerId } });
+    const res = await api.get(`/users/${userId}`, { params: { viewerId } });
     return res.data;
 }
 

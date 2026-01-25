@@ -1,11 +1,13 @@
-import React from "react";
-import { Button, Card, Grid, message, Tabs, Spin, Alert } from "antd";
+import React, { useEffect, useState } from "react";
+import { Alert, Button, Card, Form, Grid, Input, message, Modal, Select, Spin, Tabs } from "antd";
 import { useNavigate } from "react-router-dom";
 import { EventsTab, CommentsTab } from "../components/profile/ProfileTabs.jsx";
 import ProfileHeader from "../components/profile/ProfileHeader.jsx";
 import useAuth from "../hooks/useAuth.js";
 import { useUserProfile } from "../queries/users.queries.js";
 import { useCommentsByAuthor } from "../queries/comments.queries.js";
+import { useUpdateUserProfile } from "../queries/users.mutations.js";
+import { useDipartimenti, useUniversitaList } from "../queries/universita.queries.js";
 
 const { useBreakpoint } = Grid;
 
@@ -14,10 +16,30 @@ export default function Profile() {
     const navigate = useNavigate();
     const { user, logout } = useAuth();
     const [messageApi, contextHolder] = message.useMessage();
+    const [editOpen, setEditOpen] = useState(false);
+    const [selectedUniId, setSelectedUniId] = useState(null);
+    const [form] = Form.useForm();
 
     // ✅ Dati utente e commenti
     const { data: p, status, error } = useUserProfile(user?.id);
     const { data: commentsData, isLoading: loadingComments } = useCommentsByAuthor(user?.id);
+    const updateProfile = useUpdateUserProfile();
+    const { data: universita = [] } = useUniversitaList();
+    const { data: dipartimenti = [] } = useDipartimenti(selectedUniId);
+
+    useEffect(() => {
+        if (!editOpen || !p) return;
+        setSelectedUniId(p.universitaId || null);
+        form.setFieldsValue({
+            name: p.name,
+            surname: p.surname,
+            username: p.username,
+            email: p.email,
+            studentId: p.studentId,
+            universitaId: p.universitaId ?? null,
+            dipartimentoId: p.dipartimentoId ?? null,
+        });
+    }, [editOpen, form, p]);
 
     // 🔄 Loading profilo
     if (status === "pending") {
@@ -87,17 +109,20 @@ export default function Profile() {
             >
                 <h2 style={{ margin: 0 }}>Profilo</h2>
 
-                <Button
-                    danger
-                    type="primary"
-                    onClick={() => {
-                        logout();
-                        messageApi.success("Logout effettuato");
-                        navigate("/login");
-                    }}
-                >
-                    Logout
-                </Button>
+                <div style={{ display: "flex", gap: 12 }}>
+                    <Button onClick={() => setEditOpen(true)}>Modifica profilo</Button>
+                    <Button
+                        danger
+                        type="primary"
+                        onClick={() => {
+                            logout();
+                            messageApi.success("Logout effettuato");
+                            navigate("/login");
+                        }}
+                    >
+                        Logout
+                    </Button>
+                </div>
             </div>
 
             {/* HEADER PROFILO */}
@@ -112,6 +137,116 @@ export default function Profile() {
                     destroyInactiveTabPane
                 />
             </Card>
+
+            <Modal
+                title="Modifica profilo"
+                open={editOpen}
+                onCancel={() => setEditOpen(false)}
+                okText="Salva"
+                confirmLoading={updateProfile.isPending}
+                onOk={async () => {
+                    try {
+                        const values = await form.validateFields();
+                        const payload = {
+                            name: values.name,
+                            surname: values.surname,
+                            username: values.username,
+                            email: values.email,
+                            studentId: values.studentId,
+                            dipartimentoId: values.dipartimentoId ?? p.dipartimentoId ?? null,
+                        };
+                        const updated = await updateProfile.mutateAsync({
+                            userId: p.id,
+                            payload,
+                        });
+                        localStorage.setItem(
+                            "user",
+                            JSON.stringify({
+                                id: updated.id,
+                                username: updated.username,
+                                role: updated.role,
+                            })
+                        );
+                        messageApi.success("Profilo aggiornato");
+                        setEditOpen(false);
+                    } catch (err) {
+                        if (err?.errorFields) return;
+                        messageApi.error(err?.response?.data || "Errore aggiornamento profilo");
+                    }
+                }}
+            >
+                <Form form={form} layout="vertical">
+                    <Form.Item
+                        label="Nome"
+                        name="name"
+                        rules={[{ required: true, message: "Inserisci il nome" }]}
+                    >
+                        <Input />
+                    </Form.Item>
+                    <Form.Item
+                        label="Cognome"
+                        name="surname"
+                        rules={[{ required: true, message: "Inserisci il cognome" }]}
+                    >
+                        <Input />
+                    </Form.Item>
+                    <Form.Item
+                        label="Username"
+                        name="username"
+                        rules={[{ required: true, message: "Inserisci lo username" }]}
+                    >
+                        <Input />
+                    </Form.Item>
+                    <Form.Item
+                        label="Email"
+                        name="email"
+                        rules={[
+                            { required: true, message: "Inserisci la email" },
+                            { type: "email", message: "Email non valida" },
+                        ]}
+                    >
+                        <Input />
+                    </Form.Item>
+                    <Form.Item
+                        label="Matricola"
+                        name="studentId"
+                        rules={[{ required: true, message: "Inserisci la matricola" }]}
+                    >
+                        <Input />
+                    </Form.Item>
+                    <Form.Item
+                        label="Universita"
+                        name="universitaId"
+                        rules={[{ required: true, message: "Seleziona l'universita" }]}
+                    >
+                        <Select
+                            placeholder="Seleziona universita"
+                            options={(universita || []).map((u) => ({
+                                value: u.id,
+                                label: u.nome,
+                            }))}
+                            onChange={(value) => {
+                                setSelectedUniId(value);
+                                form.setFieldsValue({ dipartimentoId: null });
+                            }}
+                        />
+                    </Form.Item>
+                    <Form.Item
+                        label="Dipartimento"
+                        name="dipartimentoId"
+                        rules={[{ required: true, message: "Seleziona il dipartimento" }]}
+                    >
+                        <Select
+                            placeholder="Seleziona dipartimento"
+                            disabled={!selectedUniId}
+                            options={(dipartimenti || []).map((d) => ({
+                                value: d.id,
+                                label: d.nome,
+                            }))}
+                        />
+                    </Form.Item>
+                </Form>
+            </Modal>
         </div>
     );
 }

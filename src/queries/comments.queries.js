@@ -1,13 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
-import axios from "axios";
-
-axios.defaults.baseURL = "http://localhost:8080";
+import { api } from "../api/apiClient.js";
 
 export function useCommentsByEvento(eventoId) {
     return useQuery({
         queryKey: ["comments", eventoId],
         queryFn: async () => {
-            const { data } = await axios.get(`/api/commenti/evento/${eventoId}`);
+            const { data } = await api.get(`/commenti/evento/${eventoId}`);
             return data;
         },
         enabled: !!eventoId,
@@ -15,7 +13,7 @@ export function useCommentsByEvento(eventoId) {
 }
 
 async function fetchCommentsByAuthor(authorId) {
-    const res = await axios.get(`/api/commenti/autore/${authorId}`);
+    const res = await api.get(`/commenti/autore/${authorId}`);
     return res.data;
 }
 
