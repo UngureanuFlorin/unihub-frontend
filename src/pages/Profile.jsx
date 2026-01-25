@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Alert, Button, Card, Form, Grid, Input, message, Modal, Select, Spin, Tabs } from "antd";
+import { Alert, Button, Card, Form, Grid, Input, message, Modal, Select, Spin, Switch, Tabs } from "antd";
 import { useNavigate } from "react-router-dom";
 import { EventsTab, CommentsTab } from "../components/profile/ProfileTabs.jsx";
 import ProfileHeader from "../components/profile/ProfileHeader.jsx";
@@ -38,6 +38,7 @@ export default function Profile() {
             studentId: p.studentId,
             universitaId: p.universitaId ?? null,
             dipartimentoId: p.dipartimentoId ?? null,
+            emailNotificationsEnabled: p.emailNotificationsEnabled ?? true,
         });
     }, [editOpen, form, p]);
 
@@ -154,6 +155,7 @@ export default function Profile() {
                             email: values.email,
                             studentId: values.studentId,
                             dipartimentoId: values.dipartimentoId ?? p.dipartimentoId ?? null,
+                            emailNotificationsEnabled: values.emailNotificationsEnabled,
                         };
                         const updated = await updateProfile.mutateAsync({
                             userId: p.id,
@@ -244,6 +246,13 @@ export default function Profile() {
                                 label: d.nome,
                             }))}
                         />
+                    </Form.Item>
+                    <Form.Item
+                        label="Notifiche email"
+                        name="emailNotificationsEnabled"
+                        valuePropName="checked"
+                    >
+                        <Switch checkedChildren="On" unCheckedChildren="Off" />
                     </Form.Item>
                 </Form>
             </Modal>

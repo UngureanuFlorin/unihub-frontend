@@ -39,3 +39,15 @@ export function useDisiscriviEvento() {
         },
     });
 }
+
+export function useUpdateEvent() {
+    return useMutation({
+        mutationKey: ["updateEvent"],
+        mutationFn: async ({ eventoId, payload, editorId }) => {
+            const res = await api.put(`/eventi/${eventoId}`, payload, {
+                params: editorId ? { editorId } : undefined,
+            });
+            return res.data;
+        },
+    });
+}

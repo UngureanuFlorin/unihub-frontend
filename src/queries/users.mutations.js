@@ -10,7 +10,7 @@ export function useUpdateUserProfile() {
             return data;
         },
         onSuccess: (_, variables) => {
-            queryClient.invalidateQueries({ queryKey: ["user-profile", variables.userId] });
+            queryClient.invalidateQueries({ queryKey: ["user-profile"] });
         },
     });
 }
