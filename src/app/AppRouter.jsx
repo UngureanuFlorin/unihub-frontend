@@ -17,6 +17,8 @@ import UserProfile from "../pages/UserProfile.jsx";
 import ClubDetail from "../pages/ClubDetail.jsx";
 import UniversitaList from "../pages/UniversitaList.jsx";
 import AppLayout from "../layout/AppLayout.jsx";
+import ProtectedRoute from "../layout/ProtectedRoute.jsx";
+import ModerationQueue from "../pages/ModerationQueue.jsx";
 
 function RouteWithAuth({ children, protect = false }) {
     const { user, loading } = useAuth();
@@ -134,6 +136,16 @@ const router = createBrowserRouter([
                 element: (
                     <RouteWithAuth protect>
                         <UniversitaList />
+                    </RouteWithAuth>
+                ),
+            },
+            {
+                path: "moderation/queue",
+                element: (
+                    <RouteWithAuth protect>
+                        <ProtectedRoute allow={["SUPERADMIN"]}>
+                            <ModerationQueue />
+                        </ProtectedRoute>
                     </RouteWithAuth>
                 ),
             },

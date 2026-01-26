@@ -1,7 +1,8 @@
-import React from "react";
+import React, { useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { useClub } from "../queries/clubs.queries";
 import { useJoinClub, useLeaveClub } from "../queries/clubs.queries.js";
+import { useCreateReport } from "../queries/reports.mutations.js";
 import {
     Card,
     Typography,
@@ -13,6 +14,10 @@ import {
     Button,
     List,
     message,
+    Modal,
+    Form,
+    Select,
+    Input,
 } from "antd";
 import {
     ArrowLeftOutlined,
@@ -21,6 +26,7 @@ import {
     FieldTimeOutlined,
     CheckOutlined,
     CloseOutlined,
+    FlagOutlined,
 } from "@ant-design/icons";
 
 const { Title, Paragraph, Text } = Typography;
@@ -31,7 +37,10 @@ export default function ClubDetail() {
     const { data: club, status, error, refetch } = useClub(id);
     const joinClub = useJoinClub();
     const leaveClub = useLeaveClub();
+    const createReport = useCreateReport();
     const [messageApi, contextHolder] = message.useMessage();
+    const [reportOpen, setReportOpen] = useState(false);
+    const [reportForm] = Form.useForm();
 
     const userData = JSON.parse(localStorage.getItem("user"));
     const userId = userData?.id;
@@ -85,6 +94,33 @@ export default function ClubDetail() {
         }
     };
 
+    const openReport = () => {
+        if (!userId) {
+            messageApi.error("Devi essere loggato per segnalare");
+            return;
+        }
+        reportForm.resetFields();
+        setReportOpen(true);
+    };
+
+    const handleSubmitReport = async () => {
+        try {
+            const values = await reportForm.validateFields();
+            await createReport.mutateAsync({
+                targetType: "CLUB",
+                targetId: club.id,
+                reporterId: userId,
+                reason: values.reason,
+                details: values.details,
+            });
+            messageApi.success("Segnalazione inviata");
+            setReportOpen(false);
+        } catch (err) {
+            if (err?.errorFields) return;
+            messageApi.error(err?.response?.data || "Errore invio segnalazione");
+        }
+    };
+
     return (
         <div style={{ padding: 24 }}>
             {contextHolder}
@@ -110,7 +146,12 @@ export default function ClubDetail() {
                     <Title level={2} style={{ marginBottom: 8 }}>
                         {club.name}
                     </Title>
-                    <Tag color="geekblue">Club</Tag>
+                    <Space>
+                        <Tag color="geekblue">Club</Tag>
+                        <Button icon={<FlagOutlined />} onClick={openReport}>
+                            Segnala club
+                        </Button>
+                    </Space>
                 </Space>
 
                 {/* METADATI */}
@@ -182,6 +223,35 @@ export default function ClubDetail() {
                     )}
                 </div>
             </Card>
+
+            <Modal
+                title="Segnala club"
+                open={reportOpen}
+                onCancel={() => setReportOpen(false)}
+                okText="Invia"
+                confirmLoading={createReport.isPending}
+                onOk={handleSubmitReport}
+            >
+                <Form form={reportForm} layout="vertical">
+                    <Form.Item
+                        label="Motivo"
+                        name="reason"
+                        rules={[{ required: true, message: "Seleziona un motivo" }]}
+                    >
+                        <Select
+                            options={[
+                                { label: "Spam", value: "Spam" },
+                                { label: "Offensivo", value: "Offensivo" },
+                                { label: "Fuorviante", value: "Fuorviante" },
+                                { label: "Altro", value: "Altro" },
+                            ]}
+                        />
+                    </Form.Item>
+                    <Form.Item label="Dettagli" name="details">
+                        <Input.TextArea rows={4} placeholder="Descrivi il problema..." />
+                    </Form.Item>
+                </Form>
+            </Modal>
         </div>
     );
 }

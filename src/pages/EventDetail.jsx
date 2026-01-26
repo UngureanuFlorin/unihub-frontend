@@ -4,6 +4,7 @@ import { useEvent } from "../queries/events.queries";
 import { useIscriviEvento, useDisiscriviEvento } from "../queries/events.mutations";
 import { useCommentsByEvento } from "../queries/comments.queries";
 import { useCreateComment, useDeleteComment } from "../queries/comments.mutations";
+import { useCreateReport } from "../queries/reports.mutations.js";
 import {
     Card,
     Avatar,
@@ -20,6 +21,9 @@ import {
     Input,
     List,
     Popconfirm,
+    Modal,
+    Form,
+    Select,
 } from "antd";
 import {
     ArrowLeftOutlined,
@@ -33,6 +37,7 @@ import {
     CloseCircleOutlined,
     SendOutlined,
     DeleteOutlined,
+    FlagOutlined,
 } from "@ant-design/icons";
 import dayjs from "dayjs";
 
@@ -44,6 +49,7 @@ export default function EventDetail() {
     const { data: ev, status, error, refetch } = useEvent(id);
     const iscriviMutation = useIscriviEvento();
     const disiscriviMutation = useDisiscriviEvento();
+    const createReport = useCreateReport();
 
     // 🗨️ Commenti
     const { data: comments = [], refetch: refetchComments, isLoading: loadingComments } =
@@ -54,6 +60,9 @@ export default function EventDetail() {
     const [newComment, setNewComment] = useState("");
     const [messageApi, contextHolder] = message.useMessage();
     const user = JSON.parse(localStorage.getItem("user"));
+    const [reportOpen, setReportOpen] = useState(false);
+    const [reportTarget, setReportTarget] = useState(null);
+    const [reportForm] = Form.useForm();
 
     if (status === "pending") return <Skeleton active paragraph={{ rows: 6 }} />;
     if (status === "error")
@@ -159,6 +168,35 @@ export default function EventDetail() {
             refetch();
         } catch (err) {
             messageApi.error(err?.response?.data || "Errore durante la disiscrizione");
+        }
+    };
+
+    const openReport = (targetType, targetId) => {
+        if (!user) {
+            messageApi.error("Devi essere loggato per segnalare");
+            return;
+        }
+        setReportTarget({ targetType, targetId });
+        reportForm.resetFields();
+        setReportOpen(true);
+    };
+
+    const handleSubmitReport = async () => {
+        if (!reportTarget) return;
+        try {
+            const values = await reportForm.validateFields();
+            await createReport.mutateAsync({
+                targetType: reportTarget.targetType,
+                targetId: reportTarget.targetId,
+                reporterId: user.id,
+                reason: values.reason,
+                details: values.details,
+            });
+            messageApi.success("Segnalazione inviata");
+            setReportOpen(false);
+        } catch (err) {
+            if (err?.errorFields) return;
+            messageApi.error(err?.response?.data || "Errore invio segnalazione");
         }
     };
 
@@ -280,6 +318,9 @@ export default function EventDetail() {
                     )}
                     <Button icon={<CalendarOutlined />} onClick={handleExportCalendar}>
                         Esporta .ics
+                    </Button>
+                    <Button icon={<FlagOutlined />} onClick={() => openReport("EVENT", ev.id)}>
+                        Segnala evento
                     </Button>
                 </Space>
 
@@ -404,7 +445,14 @@ export default function EventDetail() {
                                                 />
                                             </Popconfirm>,
                                         ]
-                                        : []
+                                        : [
+                                            <Button
+                                                key="report"
+                                                type="text"
+                                                icon={<FlagOutlined />}
+                                                onClick={() => openReport("COMMENT", c.id)}
+                                            />,
+                                        ]
                                 }
                             >
                                 <Card
@@ -428,6 +476,35 @@ export default function EventDetail() {
                     />
                 )}
             </Card>
+
+            <Modal
+                title="Segnala contenuto"
+                open={reportOpen}
+                onCancel={() => setReportOpen(false)}
+                okText="Invia"
+                confirmLoading={createReport.isPending}
+                onOk={handleSubmitReport}
+            >
+                <Form form={reportForm} layout="vertical">
+                    <Form.Item
+                        label="Motivo"
+                        name="reason"
+                        rules={[{ required: true, message: "Seleziona un motivo" }]}
+                    >
+                        <Select
+                            options={[
+                                { label: "Spam", value: "Spam" },
+                                { label: "Offensivo", value: "Offensivo" },
+                                { label: "Fuorviante", value: "Fuorviante" },
+                                { label: "Altro", value: "Altro" },
+                            ]}
+                        />
+                    </Form.Item>
+                    <Form.Item label="Dettagli" name="details">
+                        <Input.TextArea rows={4} placeholder="Descrivi il problema..." />
+                    </Form.Item>
+                </Form>
+            </Modal>
         </div>
     );
 }
