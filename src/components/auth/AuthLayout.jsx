@@ -1,5 +1,9 @@
 import React from "react";
 import { ProConfigProvider, LoginForm } from "@ant-design/pro-components";
+import { createIntl } from "@ant-design/pro-provider";
+import itIT from "@ant-design/pro-provider/es/locale/it_IT";
+
+const intl = createIntl("it_IT", itIT);
 
 export default function AuthLayout({
                                        title,
@@ -10,7 +14,7 @@ export default function AuthLayout({
                                        onFinish,
                                    }) {
     return (
-        <ProConfigProvider hashed={false}>
+        <ProConfigProvider hashed={false} intl={intl}>
             <div
                 style={{
                     minHeight: "100vh",

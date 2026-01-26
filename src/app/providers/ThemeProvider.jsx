@@ -1,9 +1,11 @@
 import React from "react";
 import { ConfigProvider, theme as antdTheme } from "antd";
+import itIT from "antd/locale/it_IT";
 
 function ThemeProvider({ children }) {
     return (
         <ConfigProvider
+            locale={itIT}
             theme={{
                 algorithm: antdTheme.defaultAlgorithm,
                 token: {
