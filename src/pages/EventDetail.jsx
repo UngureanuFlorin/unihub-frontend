@@ -161,6 +161,69 @@ export default function EventDetail() {
         }
     };
 
+    const escapeIcs = (value) =>
+        String(value || "")
+            .replace(/\\/g, "\\\\")
+            .replace(/;/g, "\\;")
+            .replace(/,/g, "\\,")
+            .replace(/\n/g, "\\n");
+
+    const toIcsDate = (value) => {
+        if (!value) return "";
+        const normalized = typeof value === "string" && value.includes(" ")
+            ? `${value.replace(" ", "T")}:00`
+            : value;
+        const date = new Date(normalized);
+        if (Number.isNaN(date.getTime())) return "";
+        const pad = (n) => String(n).padStart(2, "0");
+        return `${date.getUTCFullYear()}${pad(date.getUTCMonth() + 1)}${pad(date.getUTCDate())}T${pad(
+            date.getUTCHours()
+        )}${pad(date.getUTCMinutes())}${pad(date.getUTCSeconds())}Z`;
+    };
+
+    const handleExportCalendar = () => {
+        const start = toIcsDate(ev.date);
+        const endRaw = ev.endDate || null;
+        const end = endRaw
+            ? toIcsDate(endRaw)
+            : start
+                ? toIcsDate(dayjs(ev.date.replace(" ", "T")).add(1, "hour").toDate())
+                : "";
+
+        if (!start) {
+            messageApi.error("Data evento non valida");
+            return;
+        }
+
+        const ics = [
+            "BEGIN:VCALENDAR",
+            "VERSION:2.0",
+            "PRODID:-//UniHub//IT",
+            "BEGIN:VEVENT",
+            `UID:${ev.id}@unihub`,
+            `DTSTAMP:${toIcsDate(new Date())}`,
+            `DTSTART:${start}`,
+            end ? `DTEND:${end}` : null,
+            `SUMMARY:${escapeIcs(ev.title)}`,
+            `DESCRIPTION:${escapeIcs(ev.description || ev.summary)}`,
+            ev.place ? `LOCATION:${escapeIcs(ev.place)}` : null,
+            "END:VEVENT",
+            "END:VCALENDAR",
+        ]
+            .filter(Boolean)
+            .join("\r\n");
+
+        const blob = new Blob([ics], { type: "text/calendar;charset=utf-8" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `evento-${ev.id}.ics`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    };
+
     return (
         <div style={{ padding: 24 }}>
             {contextHolder}
@@ -214,6 +277,9 @@ export default function EventDetail() {
                             <UserOutlined /> Organizzato da <b>@{ev.organizer}</b>
                         </Text>
                     )}
+                    <Button icon={<CalendarOutlined />} onClick={handleExportCalendar}>
+                        Esporta .ics
+                    </Button>
                 </Space>
 
                 <Paragraph style={{ fontSize: 16, marginBottom: 16 }}>

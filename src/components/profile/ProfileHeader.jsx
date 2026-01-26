@@ -29,7 +29,7 @@ export default function ProfileHeader({ p }) {
                 <Avatar
                     size={96}
                     icon={<UserOutlined />}
-                    src={p.image || null}
+                    src={p.profileImage || p.image || null}
                     style={{ backgroundColor: "#1677ff" }}
                 />
 

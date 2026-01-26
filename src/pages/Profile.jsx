@@ -1,13 +1,28 @@
 import React, { useEffect, useState } from "react";
-import { Alert, Button, Card, Form, Grid, Input, message, Modal, Select, Spin, Switch, Tabs } from "antd";
+import {
+    Alert,
+    Button,
+    Card,
+    Form,
+    Grid,
+    Input,
+    message,
+    Modal,
+    Select,
+    Spin,
+    Switch,
+    Tabs,
+    Upload,
+} from "antd";
 import { useNavigate } from "react-router-dom";
 import { EventsTab, CommentsTab } from "../components/profile/ProfileTabs.jsx";
 import ProfileHeader from "../components/profile/ProfileHeader.jsx";
 import useAuth from "../hooks/useAuth.js";
 import { useUserProfile } from "../queries/users.queries.js";
 import { useCommentsByAuthor } from "../queries/comments.queries.js";
-import { useUpdateUserProfile } from "../queries/users.mutations.js";
+import { useUpdateUserProfile, useUploadProfileImage } from "../queries/users.mutations.js";
 import { useDipartimenti, useUniversitaList } from "../queries/universita.queries.js";
+import { UploadOutlined } from "@ant-design/icons";
 
 const { useBreakpoint } = Grid;
 
@@ -18,18 +33,21 @@ export default function Profile() {
     const [messageApi, contextHolder] = message.useMessage();
     const [editOpen, setEditOpen] = useState(false);
     const [selectedUniId, setSelectedUniId] = useState(null);
+    const [fileList, setFileList] = useState([]);
     const [form] = Form.useForm();
 
     // ✅ Dati utente e commenti
     const { data: p, status, error } = useUserProfile(user?.id);
     const { data: commentsData, isLoading: loadingComments } = useCommentsByAuthor(user?.id);
     const updateProfile = useUpdateUserProfile();
+    const uploadProfileImage = useUploadProfileImage();
     const { data: universita = [] } = useUniversitaList();
     const { data: dipartimenti = [] } = useDipartimenti(selectedUniId);
 
     useEffect(() => {
         if (!editOpen || !p) return;
         setSelectedUniId(p.universitaId || null);
+        setFileList([]);
         form.setFieldsValue({
             name: p.name,
             surname: p.surname,
@@ -161,6 +179,13 @@ export default function Profile() {
                             userId: p.id,
                             payload,
                         });
+                        const selectedFile = fileList[0]?.originFileObj || null;
+                        if (selectedFile) {
+                            await uploadProfileImage.mutateAsync({
+                                userId: p.id,
+                                file: selectedFile,
+                            });
+                        }
                         localStorage.setItem(
                             "user",
                             JSON.stringify({
@@ -253,6 +278,18 @@ export default function Profile() {
                         valuePropName="checked"
                     >
                         <Switch checkedChildren="On" unCheckedChildren="Off" />
+                    </Form.Item>
+                    <Form.Item label="Foto profilo">
+                        <Upload
+                            beforeUpload={() => false}
+                            maxCount={1}
+                            accept="image/*"
+                            onChange={({ fileList: nextList }) => setFileList(nextList.slice(-1))}
+                            onRemove={() => setFileList([])}
+                            fileList={fileList}
+                        >
+                            <Button icon={<UploadOutlined />}>Carica immagine</Button>
+                        </Upload>
                     </Form.Item>
                 </Form>
             </Modal>

@@ -44,6 +44,7 @@ function toUiEventDetail(dto) {
         description: dto.descrizione,
         date: formatRaw(dto.dataInizio),
         datePretty: formatPretty(dto.dataInizio),
+        endDate: formatRaw(dto.dataFine),
         endDatePretty: formatPretty(dto.dataFine),
         place: dto.luogo,
         organizer: dto.creatore?.username,

@@ -14,3 +14,21 @@ export function useUpdateUserProfile() {
         },
     });
 }
+
+export function useUploadProfileImage() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async ({ userId, file }) => {
+            const formData = new FormData();
+            formData.append("file", file);
+            const { data } = await api.post(`/users/${userId}/profile-image`, formData, {
+                headers: { "Content-Type": "multipart/form-data" },
+            });
+            return data;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["user-profile"] });
+        },
+    });
+}
