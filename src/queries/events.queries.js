@@ -54,6 +54,13 @@ function toUiEventDetail(dto) {
         average: 0,
         comments: [],
         userIscritto: dto.userIscritto ?? false, // boolean dal backend
+        attendees: Array.isArray(dto.iscritti)
+            ? dto.iscritti.map((u) => ({
+                id: String(u.id),
+                username: u.username,
+                profileImage: u.profileImage || null,
+            }))
+            : [],
     };
 }
 

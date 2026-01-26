@@ -317,6 +317,20 @@ export default function EventDetail() {
                     </>
                 )}
 
+                {ev.attendees?.length > 0 && (
+                    <>
+                        <Divider />
+                        <Title level={4}>Partecipanti</Title>
+                        <Space wrap size="small">
+                            {ev.attendees.map((u) => (
+                                <Tooltip key={u.id} title={`@${u.username}`}>
+                                    <Avatar size={32} src={u.profileImage || null} icon={<UserOutlined />} />
+                                </Tooltip>
+                            ))}
+                        </Space>
+                    </>
+                )}
+
                 <Divider />
                 <div style={{ textAlign: "center", marginBottom: 16 }}>
                     {ev.userIscritto ? (

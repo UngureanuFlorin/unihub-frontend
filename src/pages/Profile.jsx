@@ -23,6 +23,7 @@ import { useCommentsByAuthor } from "../queries/comments.queries.js";
 import { useUpdateUserProfile, useUploadProfileImage } from "../queries/users.mutations.js";
 import { useDipartimenti, useUniversitaList } from "../queries/universita.queries.js";
 import { UploadOutlined } from "@ant-design/icons";
+import { useReportSupport } from "../queries/support.mutations.js";
 
 const { useBreakpoint } = Grid;
 
@@ -32,15 +33,18 @@ export default function Profile() {
     const { user, logout } = useAuth();
     const [messageApi, contextHolder] = message.useMessage();
     const [editOpen, setEditOpen] = useState(false);
+    const [reportOpen, setReportOpen] = useState(false);
     const [selectedUniId, setSelectedUniId] = useState(null);
     const [fileList, setFileList] = useState([]);
     const [form] = Form.useForm();
+    const [reportForm] = Form.useForm();
 
     // ✅ Dati utente e commenti
     const { data: p, status, error } = useUserProfile(user?.id);
     const { data: commentsData, isLoading: loadingComments } = useCommentsByAuthor(user?.id);
     const updateProfile = useUpdateUserProfile();
     const uploadProfileImage = useUploadProfileImage();
+    const reportSupport = useReportSupport();
     const { data: universita = [] } = useUniversitaList();
     const { data: dipartimenti = [] } = useDipartimenti(selectedUniId);
 
@@ -67,6 +71,15 @@ export default function Profile() {
             emailNotificationsEnabled: p.emailNotificationsEnabled ?? true,
         });
     }, [editOpen, form, p]);
+
+    useEffect(() => {
+        if (!reportOpen || !p) return;
+        reportForm.setFieldsValue({
+            name: `${p.name} ${p.surname}`.trim(),
+            email: p.email || "",
+            subject: "Segnalazione UniHub",
+        });
+    }, [reportOpen, p, reportForm]);
 
     // 🔄 Loading profilo
     if (status === "pending") {
@@ -137,6 +150,7 @@ export default function Profile() {
                 <h2 style={{ margin: 0 }}>Profilo</h2>
 
                 <div style={{ display: "flex", gap: 12 }}>
+                    <Button onClick={() => setReportOpen(true)}>Segnala un problema</Button>
                     <Button onClick={() => setEditOpen(true)}>Modifica profilo</Button>
                     <Button
                         danger
@@ -298,6 +312,56 @@ export default function Profile() {
                         >
                             <Button icon={<UploadOutlined />}>Carica immagine</Button>
                         </Upload>
+                    </Form.Item>
+                </Form>
+            </Modal>
+
+            <Modal
+                title="Segnala un problema"
+                open={reportOpen}
+                onCancel={() => setReportOpen(false)}
+                okText="Invia"
+                confirmLoading={reportSupport.isPending}
+                onOk={async () => {
+                    try {
+                        const values = await reportForm.validateFields();
+                        await reportSupport.mutateAsync(values);
+                        messageApi.success("Segnalazione inviata");
+                        setReportOpen(false);
+                        reportForm.resetFields();
+                    } catch (err) {
+                        if (err?.errorFields) return;
+                        messageApi.error(getErrorMessage(err, "Errore invio segnalazione"));
+                    }
+                }}
+            >
+                <Form form={reportForm} layout="vertical">
+                    <Form.Item
+                        label="Nome"
+                        name="name"
+                        rules={[{ required: true, message: "Inserisci il nome" }]}
+                    >
+                        <Input />
+                    </Form.Item>
+                    <Form.Item
+                        label="Email"
+                        name="email"
+                        rules={[
+                            { required: true, message: "Inserisci la email" },
+                            { type: "email", message: "Email non valida" },
+                        ]}
+                    >
+                        <Input />
+                    </Form.Item>
+                    <Form.Item label="Oggetto" name="subject">
+                        <Input />
+                    </Form.Item>
+                    <Form.Item
+                        label="Messaggio"
+                        name="message"
+                        rules={[{ required: true, message: "Inserisci il messaggio" }]}
+                    >
+                        <Input.TextArea rows={4} />
                     </Form.Item>
                 </Form>
             </Modal>
