@@ -3,6 +3,12 @@ import { Button, Card, Select, Space, Table, Tag, Typography, message } from "an
 import { Link } from "react-router-dom";
 import { useReports } from "../queries/reports.queries.js";
 import { useUpdateReportStatus } from "../queries/reports.mutations.js";
+import { getErrorMessage } from "../utils/error.js";
+import {
+    useDeleteCommentModeration,
+    useHideEventModeration,
+    useSuspendClubModeration,
+} from "../queries/moderation.mutations.js";
 
 const { Title, Text } = Typography;
 
@@ -31,7 +37,14 @@ export default function ModerationQueue() {
     const [type, setType] = useState(undefined);
     const { data: reports = [], isLoading } = useReports({ status, type });
     const updateStatus = useUpdateReportStatus();
+    const deleteComment = useDeleteCommentModeration();
+    const hideEvent = useHideEventModeration();
+    const suspendClub = useSuspendClubModeration();
     const [messageApi, contextHolder] = message.useMessage();
+
+    const handleResolve = async (reportId) => {
+        await updateStatus.mutateAsync({ reportId, status: "RESOLVED" });
+    };
 
     const columns = useMemo(
         () => [
@@ -78,28 +91,80 @@ export default function ModerationQueue() {
             {
                 title: "Azione",
                 dataIndex: "action",
-                width: 180,
+                width: 260,
                 render: (_, record) => (
-                    <Select
-                        size="small"
-                        value={record.status}
-                        options={STATUS_OPTIONS}
-                        onChange={async (next) => {
-                            try {
-                                await updateStatus.mutateAsync({
-                                    reportId: record.id,
-                                    status: next,
-                                });
-                                messageApi.success("Stato aggiornato");
-                            } catch (err) {
-                                messageApi.error(err?.response?.data || "Errore aggiornamento stato");
-                            }
-                        }}
-                    />
+                    <Space>
+                        <Select
+                            size="small"
+                            value={record.status}
+                            options={STATUS_OPTIONS}
+                            onChange={async (next) => {
+                                try {
+                                    await updateStatus.mutateAsync({
+                                        reportId: record.id,
+                                        status: next,
+                                    });
+                                    messageApi.success("Stato aggiornato");
+                                } catch (err) {
+                                    messageApi.error(getErrorMessage(err, "Errore aggiornamento stato"));
+                                }
+                            }}
+                            style={{ width: 120 }}
+                        />
+                        {record.targetType === "COMMENT" && (
+                            <Button
+                                size="small"
+                                danger
+                                onClick={async () => {
+                                    try {
+                                        await deleteComment.mutateAsync(record.targetId);
+                                        await handleResolve(record.id);
+                                        messageApi.success("Commento eliminato");
+                                    } catch (err) {
+                                        messageApi.error(getErrorMessage(err, "Errore eliminazione commento"));
+                                    }
+                                }}
+                            >
+                                Elimina
+                            </Button>
+                        )}
+                        {record.targetType === "EVENT" && (
+                            <Button
+                                size="small"
+                                onClick={async () => {
+                                    try {
+                                        await hideEvent.mutateAsync(record.targetId);
+                                        await handleResolve(record.id);
+                                        messageApi.success("Evento nascosto");
+                                    } catch (err) {
+                                        messageApi.error(getErrorMessage(err, "Errore hide evento"));
+                                    }
+                                }}
+                            >
+                                Nascondi
+                            </Button>
+                        )}
+                        {record.targetType === "CLUB" && (
+                            <Button
+                                size="small"
+                                onClick={async () => {
+                                    try {
+                                        await suspendClub.mutateAsync(record.targetId);
+                                        await handleResolve(record.id);
+                                        messageApi.success("Club sospeso");
+                                    } catch (err) {
+                                        messageApi.error(getErrorMessage(err, "Errore sospensione club"));
+                                    }
+                                }}
+                            >
+                                Sospendi
+                            </Button>
+                        )}
+                    </Space>
                 ),
             },
         ],
-        [messageApi, updateStatus]
+        [deleteComment, hideEvent, messageApi, suspendClub, updateStatus]
     );
 
     return (

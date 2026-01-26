@@ -40,6 +40,7 @@ import {
     FlagOutlined,
 } from "@ant-design/icons";
 import dayjs from "dayjs";
+import { getErrorMessage } from "../utils/error.js";
 
 const { Title, Paragraph, Text } = Typography;
 const { TextArea } = Input;
@@ -149,7 +150,7 @@ export default function EventDetail() {
             messageApi.success("Ti sei iscritto all'evento!");
             refetch();
         } catch (err) {
-            messageApi.error(err?.response?.data || "Errore durante l'iscrizione");
+            messageApi.error(getErrorMessage(err, "Errore durante l'iscrizione"));
         }
     };
 
@@ -167,7 +168,7 @@ export default function EventDetail() {
             messageApi.success("Ti sei disiscritto dall'evento");
             refetch();
         } catch (err) {
-            messageApi.error(err?.response?.data || "Errore durante la disiscrizione");
+            messageApi.error(getErrorMessage(err, "Errore durante la disiscrizione"));
         }
     };
 
@@ -196,7 +197,7 @@ export default function EventDetail() {
             setReportOpen(false);
         } catch (err) {
             if (err?.errorFields) return;
-            messageApi.error(err?.response?.data || "Errore invio segnalazione");
+            messageApi.error(getErrorMessage(err, "Errore invio segnalazione"));
         }
     };
 

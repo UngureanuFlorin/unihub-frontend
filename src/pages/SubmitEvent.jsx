@@ -1,6 +1,7 @@
 import React from "react";
 import { Card, Form, Input, DatePicker, InputNumber, Button, message } from "antd";
 import { useCreateEvent } from "../queries/events.mutations";
+import { getErrorMessage } from "../utils/error.js";
 
 const { TextArea } = Input;
 const { RangePicker } = DatePicker;
@@ -36,7 +37,7 @@ function SubmitEvent() {
             messageApi.success("✅ Evento creato con successo!");
             form.resetFields();
         } catch (err) {
-            messageApi.error(err?.response?.data || "Errore durante la creazione");
+            messageApi.error(getErrorMessage(err, "Errore durante la creazione"));
         }
     };
 

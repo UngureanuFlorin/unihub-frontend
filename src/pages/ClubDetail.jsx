@@ -28,6 +28,7 @@ import {
     CloseOutlined,
     FlagOutlined,
 } from "@ant-design/icons";
+import { getErrorMessage } from "../utils/error.js";
 
 const { Title, Paragraph, Text } = Typography;
 
@@ -80,7 +81,7 @@ export default function ClubDetail() {
             messageApi.success("✅ Ti sei unito al club!");
             refetch();
         } catch (err) {
-            messageApi.error(err?.response?.data || "Errore durante l’iscrizione");
+            messageApi.error(getErrorMessage(err, "Errore durante l’iscrizione"));
         }
     };
 
@@ -90,7 +91,7 @@ export default function ClubDetail() {
             messageApi.success("👋 Hai lasciato il club");
             refetch();
         } catch (err) {
-            messageApi.error(err?.response?.data || "Errore durante la disiscrizione");
+            messageApi.error(getErrorMessage(err, "Errore durante la disiscrizione"));
         }
     };
 
@@ -117,7 +118,7 @@ export default function ClubDetail() {
             setReportOpen(false);
         } catch (err) {
             if (err?.errorFields) return;
-            messageApi.error(err?.response?.data || "Errore invio segnalazione");
+            messageApi.error(getErrorMessage(err, "Errore invio segnalazione"));
         }
     };
 

@@ -4,6 +4,7 @@ import { useParams, Link } from "react-router-dom";
 import { useUserProfile } from "../queries/users.queries";
 import { useFollowUser, useUnfollowUser } from "../queries/follow.mutations";
 import { useQueryClient } from "@tanstack/react-query";
+import { getErrorMessage } from "../utils/error.js";
 import {
     Card, Typography, Space, Tag, Button, Row, Col,
     List, Skeleton, Alert, message
@@ -62,7 +63,7 @@ export default function UserProfile() {
                     message.success(p.following ? "Unfollow eseguito" : "Ora segui l’utente");
                     qc.invalidateQueries({ queryKey: ["user-profile", id, me.id] });
                 },
-                onError: (err) => message.error(String(err?.response?.data || "Errore operazione")),
+                onError: (err) => message.error(getErrorMessage(err, "Errore operazione")),
             }
         );
     };

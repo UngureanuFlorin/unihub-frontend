@@ -24,6 +24,7 @@ import { useUpdateUserProfile, useUploadProfileImage } from "../queries/users.mu
 import { useDipartimenti, useUniversitaList } from "../queries/universita.queries.js";
 import { UploadOutlined } from "@ant-design/icons";
 import { useReportSupport } from "../queries/support.mutations.js";
+import { getErrorMessage } from "../utils/error.js";
 
 const { useBreakpoint } = Grid;
 
@@ -48,13 +49,6 @@ export default function Profile() {
     const { data: universita = [] } = useUniversitaList();
     const { data: dipartimenti = [] } = useDipartimenti(selectedUniId);
 
-    const getErrorMessage = (err, fallback) => {
-        const data = err?.response?.data;
-        if (!data) return fallback;
-        if (typeof data === "string") return data;
-        if (typeof data === "object") return data.message || data.error || JSON.stringify(data);
-        return String(data);
-    };
 
     useEffect(() => {
         if (!editOpen || !p) return;
