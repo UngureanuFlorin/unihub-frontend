@@ -44,6 +44,14 @@ export default function Profile() {
     const { data: universita = [] } = useUniversitaList();
     const { data: dipartimenti = [] } = useDipartimenti(selectedUniId);
 
+    const getErrorMessage = (err, fallback) => {
+        const data = err?.response?.data;
+        if (!data) return fallback;
+        if (typeof data === "string") return data;
+        if (typeof data === "object") return data.message || data.error || JSON.stringify(data);
+        return String(data);
+    };
+
     useEffect(() => {
         if (!editOpen || !p) return;
         setSelectedUniId(p.universitaId || null);
@@ -198,7 +206,7 @@ export default function Profile() {
                         setEditOpen(false);
                     } catch (err) {
                         if (err?.errorFields) return;
-                        messageApi.error(err?.response?.data || "Errore aggiornamento profilo");
+                        messageApi.error(getErrorMessage(err, "Errore aggiornamento profilo"));
                     }
                 }}
             >
