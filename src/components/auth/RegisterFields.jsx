@@ -130,6 +130,7 @@ export default function RegisterFields() {
                     accept: "image/*",
                     beforeUpload: () => false,
                 }}
+                title="Carica immagine"
             />
 
             {/* Università */}
