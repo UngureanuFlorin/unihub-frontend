@@ -17,6 +17,14 @@ export default function AuthPage() {
 
     const [messageApi, contextHolder] = message.useMessage();
 
+    const fileToDataUrl = (file) =>
+        new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = () => reject(new Error("Errore lettura immagine"));
+            reader.readAsDataURL(file);
+        });
+
     const handleLoginFinish = async (values) => {
         try {
             const res = await loginMutation.mutateAsync(values);
@@ -41,7 +49,14 @@ export default function AuthPage() {
             return;
         }
         try {
-            await registerMutation.mutateAsync(values);
+            const payload = { ...values };
+            const file = payload.profileImage?.[0]?.originFileObj || null;
+            if (file) {
+                payload.profileImage = await fileToDataUrl(file);
+            } else {
+                delete payload.profileImage;
+            }
+            await registerMutation.mutateAsync(payload);
             messageApi.success("Registrazione completata!");
             setActiveTab(AUTH_TABS.LOGIN);
         } catch (err) {

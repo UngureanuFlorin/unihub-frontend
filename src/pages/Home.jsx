@@ -19,12 +19,14 @@ import {
 } from "@ant-design/icons";
 import { Link, useNavigate } from "react-router-dom";
 import useAuth from "../hooks/useAuth.js";
+import { useUserProfile } from "../queries/users.queries.js";
 
 const { Title, Paragraph, Text } = Typography;
 
 function Home() {
     const navigate = useNavigate();
     const { user } = useAuth();
+    const { data: profile } = useUserProfile(user?.id);
     const isSuperAdmin = user?.role === "SUPERADMIN";
     return (
         <div
@@ -99,7 +101,7 @@ function Home() {
                     <Avatar
                         size={48}
                         icon={<UserOutlined />}
-                        src={user.image || null}
+                        src={profile?.profileImage || user.image || null}
                         onClick={() => navigate("/profile")}
                         style={{
                             position: "absolute",

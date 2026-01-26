@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from "react";
-import { ProFormSelect, ProFormText } from "@ant-design/pro-components";
+import { ProFormSelect, ProFormText, ProFormUploadButton } from "@ant-design/pro-components";
 import {
     ApartmentOutlined,
     BankOutlined,
@@ -118,6 +118,18 @@ export default function RegisterFields() {
                         },
                     },
                 ]}
+            />
+
+            {/* Foto profilo */}
+            <ProFormUploadButton
+                name="profileImage"
+                label="Foto profilo (opzionale)"
+                max={1}
+                fieldProps={{
+                    listType: "picture",
+                    accept: "image/*",
+                    beforeUpload: () => false,
+                }}
             />
 
             {/* Università */}

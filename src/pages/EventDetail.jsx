@@ -6,6 +6,7 @@ import { useCommentsByEvento } from "../queries/comments.queries";
 import { useCreateComment, useDeleteComment } from "../queries/comments.mutations";
 import {
     Card,
+    Avatar,
     Typography,
     Space,
     Tag,
@@ -395,7 +396,16 @@ export default function EventDetail() {
                                 <Card
                                     size="small"
                                     style={{ width: "100%", borderRadius: 8 }}
-                                    title={<Text strong>@{c.autoreUsername || "utente"}</Text>}
+                                    title={
+                                        <Space size="small">
+                                            <Avatar
+                                                size={28}
+                                                icon={<UserOutlined />}
+                                                src={c.autore?.profileImage || null}
+                                            />
+                                            <Text strong>@{c.autore?.username || c.autoreUsername || "utente"}</Text>
+                                        </Space>
+                                    }
                                 >
                                     {c.testo}
                                 </Card>
