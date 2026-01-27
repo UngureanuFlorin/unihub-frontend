@@ -9,23 +9,26 @@ import {
     Tag,
     Divider,
     Tooltip,
-    Avatar,
+    Avatar, Badge,
 } from "antd";
 import {
     CalendarOutlined,
     PlusCircleOutlined,
     CompassOutlined,
-    UserOutlined, ArrowLeftOutlined,
+    UserOutlined,
+    InboxOutlined,
 } from "@ant-design/icons";
 import { Link, useNavigate } from "react-router-dom";
 import useAuth from "../hooks/useAuth.js";
 import { useUserProfile } from "../queries/users.queries.js";
+import {useUnreadMessages} from "../queries/messages.queries.js";
 
 const { Title, Paragraph, Text } = Typography;
 
 function Home() {
     const navigate = useNavigate();
     const { user } = useAuth();
+    const { data: unreadCount = 0, isLoading } = useUnreadMessages(user?.id);
     const { data: profile } = useUserProfile(user?.id);
     const isSuperAdmin = user?.role === "SUPERADMIN";
     return (
@@ -79,46 +82,76 @@ function Home() {
                 </Tooltip>
             )}
 
-            {/* 👤 Se loggato → mostra Avatar */}
             {user && (
-                <Tooltip
-                    placement="bottomRight"
-                    color="white"
-                    title={
-                        <span
-                            style={{
-                                fontWeight: "bold",
-                                background: "linear-gradient(90deg, #00d2ff 0%, #3a47d5 100%)",
-                                WebkitBackgroundClip: "text",
-                                WebkitTextFillColor: "transparent",
-                                fontSize: 14,
-                            }}
-                        >
-              👋 Ciao {user.username}!
-            </span>
-                    }
+                <div
+                    style={{
+                        position: "absolute",
+                        top: 16,
+                        right: 24,
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 16,
+                    }}
                 >
-                    <Avatar
-                        size={48}
-                        icon={<UserOutlined />}
-                        src={profile?.profileImage || user.image || null}
-                        onClick={() => navigate("/profile")}
-                        style={{
-                            position: "absolute",
-                            top: 16,
-                            right: 24,
-                            cursor: "pointer",
-                            border: "2px solid #1677ff",
-                            transition: "transform 0.2s ease",
-                        }}
-                        onMouseEnter={(e) =>
-                            (e.currentTarget.style.transform = "scale(1.15)")
+                    {/* 📥 Inbox */}
+                    <Tooltip title="Messaggi">
+                        <Badge count={isLoading ? 0 : unreadCount} size="small">
+                            <InboxOutlined
+                                style={{
+                                    fontSize: 26,
+                                    color: "#1677ff",
+                                    cursor: "pointer",
+                                    transition: "transform 0.2s ease",
+                                }}
+                                onClick={() => navigate("/messages")}
+                                onMouseEnter={(e) =>
+                                    (e.currentTarget.style.transform = "scale(1.15)")
+                                }
+                                onMouseLeave={(e) =>
+                                    (e.currentTarget.style.transform = "scale(1)")
+                                }
+                            />
+                        </Badge>
+                    </Tooltip>
+
+                    {/* 👤 Avatar */}
+                    <Tooltip
+                        placement="bottomRight"
+                        color="white"
+                        title={
+                            <span
+                                style={{
+                                    fontWeight: "bold",
+                                    background:
+                                        "linear-gradient(90deg, #00d2ff 0%, #3a47d5 100%)",
+                                    WebkitBackgroundClip: "text",
+                                    WebkitTextFillColor: "transparent",
+                                    fontSize: 14,
+                                }}
+                            >
+                    👋 Ciao {user.username}!
+                </span>
                         }
-                        onMouseLeave={(e) =>
-                            (e.currentTarget.style.transform = "scale(1)")
-                        }
-                    />
-                </Tooltip>
+                    >
+                        <Avatar
+                            size={48}
+                            icon={<UserOutlined />}
+                            src={profile?.profileImage || user.image || null}
+                            onClick={() => navigate("/profile")}
+                            style={{
+                                cursor: "pointer",
+                                border: "2px solid #1677ff",
+                                transition: "transform 0.2s ease",
+                            }}
+                            onMouseEnter={(e) =>
+                                (e.currentTarget.style.transform = "scale(1.15)")
+                            }
+                            onMouseLeave={(e) =>
+                                (e.currentTarget.style.transform = "scale(1)")
+                            }
+                        />
+                    </Tooltip>
+                </div>
             )}
 
             {/* CONTENUTO CENTRALE */}

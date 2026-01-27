@@ -1,9 +1,9 @@
 import { api } from "./apiClient";
 
 export const loginRequest = (payload) => {
-    console.log("📤 loginRequest payload:", payload);
+    console.log("loginRequest payload:", payload);
     return api.post("/auth/login", payload).then(r => {
-        console.log("📥 loginRequest response:", r.data);
+        console.log("loginRequest response:", r.data);
         return r.data;
     });
 };

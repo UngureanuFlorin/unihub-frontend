@@ -3,7 +3,7 @@ import { Layout, Menu } from "antd";
 import { Link, Outlet, useLocation } from "react-router-dom";
 import { HomeOutlined, CalendarOutlined, PlusCircleOutlined, SafetyOutlined } from "@ant-design/icons";
 
-const { Header, Sider, Content } = Layout;
+const { Sider, Content } = Layout;
 
 function AppLayout() {
     const { pathname } = useLocation();
@@ -28,9 +28,7 @@ function AppLayout() {
                 />
             </Sider>
             <Layout>
-                <Header style={{ background: "#fff", padding: "0 16px" }}>
-                </Header>
-                <Content style={{ margin: 16 }}>
+                <Content style={{ margin: 0 }}>
                     <Outlet />
                 </Content>
             </Layout>

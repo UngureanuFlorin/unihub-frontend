@@ -18,6 +18,8 @@ import ClubDetail from "../pages/ClubDetail.jsx";
 import UniversitaList from "../pages/UniversitaList.jsx";
 import AppLayout from "../layout/AppLayout.jsx";
 import ProtectedRoute from "../layout/ProtectedRoute.jsx";
+import Inbox from "../pages/Inbox.jsx";
+import ForgotPassword from "../pages/ForgotPassword.jsx";
 import ModerationQueue from "../pages/ModerationQueue.jsx";
 
 function RouteWithAuth({ children, protect = false }) {
@@ -55,6 +57,14 @@ const router = createBrowserRouter([
         ),
     },
     {
+        path: "/forgot-password",
+        element: (
+            <PublicRoute>
+                <ForgotPassword />
+            </PublicRoute>
+        ),
+    },
+    {
         path: "/",
         element: <AppLayout />,
         children: [
@@ -72,6 +82,14 @@ const router = createBrowserRouter([
                 element: (
                     <RouteWithAuth>
                         <Event />
+                    </RouteWithAuth>
+                ),
+            },
+            {
+                path: "messages",
+                element: (
+                    <RouteWithAuth>
+                        <Inbox />
                     </RouteWithAuth>
                 ),
             },

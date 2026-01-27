@@ -1,9 +1,9 @@
-// src/pages/UserProfile.jsx
 import React from "react";
 import { useParams, Link } from "react-router-dom";
 import { useUserProfile } from "../queries/users.queries";
 import { useFollowUser, useUnfollowUser } from "../queries/follow.mutations";
 import { useQueryClient } from "@tanstack/react-query";
+import { useSendMessage } from "../queries/messages.mutations.js";
 import { getErrorMessage } from "../utils/error.js";
 import {
     Card, Typography, Space, Tag, Button, Row, Col,
@@ -27,6 +27,7 @@ export default function UserProfile() {
     const { data: p, status, error } = useUserProfile(id);
     const followMutation = useFollowUser();
     const unfollowMutation = useUnfollowUser();
+    const sendMessageMutation = useSendMessage();
 
     if (status === "pending") {
         return (
@@ -66,6 +67,13 @@ export default function UserProfile() {
                 onError: (err) => message.error(getErrorMessage(err, "Errore operazione")),
             }
         );
+        if (!p.following) {
+            sendMessageMutation.mutate({
+                senderId: me.id,
+                receiverId: p.id,
+                content: "Ciao! Ti sto seguendo su UniHub 😊",
+            });
+        }
     };
 
     return (
@@ -126,7 +134,7 @@ export default function UserProfile() {
                                 type={p.following ? "default" : "primary"}
                                 onClick={onToggleFollow}
                             >
-                                {p.following ? "Following" : "Segui"}
+                                {p.following ? "Non seguire più" : "Segui"}
                             </Button>
                         )}
                     </Col>
