@@ -1,7 +1,7 @@
 import React from "react";
 import { Layout, Menu } from "antd";
 import { Link, Outlet, useLocation } from "react-router-dom";
-import { HomeOutlined, CalendarOutlined, PlusCircleOutlined, SafetyOutlined } from "@ant-design/icons";
+import { HomeOutlined, CalendarOutlined, PlusCircleOutlined, SafetyOutlined, MailOutlined } from "@ant-design/icons";
 
 const { Sider, Content } = Layout;
 
@@ -24,6 +24,7 @@ function AppLayout() {
                         { key: "events", icon: <CalendarOutlined />, label: <Link to="/events">Eventi</Link> },
                         { key: "create-event", icon: <PlusCircleOutlined />, label: <Link to="/create/event">Proponi</Link> },
                         { key: "moderation", icon: <SafetyOutlined />, label: <Link to="/moderation/queue">Moderazione</Link> },
+                        { key: "moderation-emails", icon: <MailOutlined />, label: <Link to="/moderation/emails">Email log</Link> },
                     ]}
                 />
             </Sider>
