@@ -67,29 +67,28 @@ function toUiEventDetail(dto) {
             : [],
     };
 }
-export async function fetchEvents(filters = {}) {
-    // pulizia: togli chiavi vuote/null per non sporcare la querystring
-    const params = Object.fromEntries(
-        Object.entries(filters).filter(
-            ([, v]) => v !== "" && v !== null && v !== undefined
-        )
-    );
-
-    // NB: se apiClient ha baseURL già con /api, qui basta "/eventi/search"
-    const res = await api.get("/eventi/search", { params });
-
-<<<<<<< Updated upstream
-    // backend ritorna array di DTO
-    if (Array.isArray(res.data)) return res.data.map(toUiEvent);
-=======
 // 🔹 Recupera una pagina di eventi (lista)
 export async function fetchEventsPage({ page = 0, size = 9, ...filters }) {
     const res = await api.get("/eventi", { params: { page, size, ...filters } });
     const data = res.data;
->>>>>>> Stashed changes
 
-    // fallback (se per sbaglio arriva altro)
-    return [];
+    // Caso: backend Spring restituisce un oggetto Page<EventoDTO>
+    if (data && typeof data === "object" && data.content) {
+        const items = data.content.map(toUiEvent);
+        const nextPage = data.last ? undefined : data.number + 1;
+        return { items, nextPage };
+    }
+
+    // Caso: semplice array di eventi
+    if (Array.isArray(data)) {
+        const all = data.map(toUiEvent);
+        const start = page * size;
+        const slice = all.slice(start, start + size);
+        const hasNext = start + size < all.length;
+        return { items: slice, nextPage: hasNext ? page + 1 : undefined };
+    }
+
+    return { items: [], nextPage: undefined };
 }
 
 // 🔹 Recupera un singolo evento per ID (DETTAGLIO)
@@ -104,11 +103,12 @@ export async function fetchEvent(id) {
 ================================ */
 
 // 🔹 Hook per lista con infinite scroll
-export function useEvents(filters = {}) {
-    return useQuery({
+export function useInfiniteEvents(filters = {}) {
+    return useInfiniteQuery({
         queryKey: ["events", filters],
-        queryFn: () => fetchEvents(filters),
-        keepPreviousData: true,
+        queryFn: ({ pageParam = 0 }) =>
+            fetchEventsPage({ page: pageParam, size: 9, ...filters }),
+        getNextPageParam: (last) => last.nextPage,
     });
 }
 

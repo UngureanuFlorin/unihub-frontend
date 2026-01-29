@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { api } from "../api/apiClient.js";
 
-export function useEmailLogs({ status, type } = {}) {
+export function useEmailHistory({ status, type } = {}) {
     return useQuery({
         queryKey: ["email-history", status || "all", type || "all"],
         queryFn: async () => {
@@ -16,3 +16,6 @@ export function useEmailLogs({ status, type } = {}) {
         },
     });
 }
+
+// Backward compatibility
+export const useEmailLogs = useEmailHistory;
