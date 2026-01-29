@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useInfiniteEvents } from "../queries/events.queries";
+import {useEvents} from "../queries/events.queries";
 import Hero from "../components/common/Hero.jsx";
 import Filters from "../components/common/Filters.jsx";
 import List from "../components/common/List.jsx";
@@ -16,26 +16,29 @@ export default function Event() {
         dateRange: null,
     });
 
-    const params = useMemo(
-        () => ({
+    const toLocalDateTimeParam = (d) => {
+        if (!d) return undefined;
+
+        // supporta dayjs/moment (hanno toDate())
+        const dateObj = typeof d.toDate === "function" ? d.toDate() : d;
+
+        // manda "YYYY-MM-DDTHH:mm:ss" (senza Z) -> perfetto per LocalDateTime
+        return dateObj.toISOString().slice(0, 19);
+    };
+
+    const params = useMemo(() => {
+        const [start, end] = filters.dateRange ?? [];
+        return {
             search: filters.search,
             category: filters.category,
             university: filters.university,
             faculty: filters.faculty,
-        }),
-        [filters]
-    );
+            from: toLocalDateTimeParam(start),
+            to: toLocalDateTimeParam(end),
+        };
+    }, [filters]);
 
-    const {
-        data,
-        fetchNextPage,
-        hasNextPage,
-        isFetchingNextPage,
-        isLoading,
-        isError,
-    } = useInfiniteEvents(params);
-
-    const items = data?.pages?.flatMap((p) => p.items) ?? [];
+    const { data: items = [], isLoading, isError } = useEvents(params);
 
     return (
         <div style={{ padding: 24 }}>
@@ -58,9 +61,6 @@ export default function Event() {
                 isError={isError}
                 grid={{ gutter: 16, xs: 1, sm: 2, md: 2, lg: 3, xl: 3, xxl: 3 }}
                 onItemClick={(id) => navigate(`/events/${id}`)}
-                hasNextPage={!!hasNextPage}
-                isFetchingNextPage={isFetchingNextPage}
-                onLoadMore={fetchNextPage}
             />
         </div>
     );

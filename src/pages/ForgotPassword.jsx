@@ -3,8 +3,9 @@ import { ProForm, ProFormText } from "@ant-design/pro-components";
 import { message } from "antd";
 import { useMutation } from "@tanstack/react-query";
 import {api} from "../api/apiClient.js";
-
+import { useNavigate } from "react-router-dom";
 export default function ForgotPassword() {
+    const navigate = useNavigate();
     const resetPasswordMutation = useMutation({
         mutationKey: ["resetPassword"],
         mutationFn: async (data) => {
@@ -13,6 +14,7 @@ export default function ForgotPassword() {
         },
         onSuccess: (data) => {
             message.success(data);
+            navigate("/login", { replace: true });
         },
         onError: (error) => {
             message.error(error.response?.data || "Errore durante il reset della password");
