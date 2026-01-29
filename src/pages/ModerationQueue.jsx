@@ -1,12 +1,12 @@
 import React, { useMemo, useState } from "react";
-import { Button, Card, Select, Space, Table, Tag, Typography, message } from "antd";
+import { Button, Card, Popconfirm, Select, Space, Table, Tag, Typography, message } from "antd";
 import { Link } from "react-router-dom";
 import { useReports } from "../queries/reports.queries.js";
 import { useUpdateReportStatus } from "../queries/reports.mutations.js";
 import { getErrorMessage } from "../utils/error.js";
 import {
-    useDeleteCommentModeration,
     useHideEventModeration,
+    useRestoreClubModeration,
     useSuspendClubModeration,
 } from "../queries/moderation.mutations.js";
 
@@ -37,9 +37,9 @@ export default function ModerationQueue() {
     const [type, setType] = useState(undefined);
     const { data: reports = [], isLoading } = useReports({ status, type });
     const updateStatus = useUpdateReportStatus();
-    const deleteComment = useDeleteCommentModeration();
     const hideEvent = useHideEventModeration();
     const suspendClub = useSuspendClubModeration();
+    const restoreClub = useRestoreClubModeration();
     const [messageApi, contextHolder] = message.useMessage();
 
     const handleResolve = async (reportId) => {
@@ -62,7 +62,17 @@ export default function ModerationQueue() {
                         return <Link to={`/events/${record.targetId}`}>{record.targetSummary}</Link>;
                     }
                     if (record.targetType === "CLUB") {
-                        return <Link to={`/clubs/${record.targetId}`}>{record.targetSummary}</Link>;
+                        const clubLabel = record.targetSummary;
+                        return (
+                            <Space size="small">
+                                {record.targetSuspended ? (
+                                    <Text>{clubLabel}</Text>
+                                ) : (
+                                    <Link to={`/clubs/${record.targetId}`}>{clubLabel}</Link>
+                                )}
+                                {record.targetSuspended && <Tag color="volcano">Sospeso</Tag>}
+                            </Space>
+                        );
                     }
                     return <Text>{record.targetSummary}</Text>;
                 },
@@ -111,60 +121,60 @@ export default function ModerationQueue() {
                             }}
                             style={{ width: 120 }}
                         />
-                        {record.targetType === "COMMENT" && (
-                            <Button
-                                size="small"
-                                danger
-                                onClick={async () => {
-                                    try {
-                                        await deleteComment.mutateAsync(record.targetId);
-                                        await handleResolve(record.id);
-                                        messageApi.success("Commento eliminato");
-                                    } catch (err) {
-                                        messageApi.error(getErrorMessage(err, "Errore eliminazione commento"));
-                                    }
-                                }}
-                            >
-                                Elimina
-                            </Button>
-                        )}
                         {record.targetType === "EVENT" && (
-                            <Button
-                                size="small"
-                                onClick={async () => {
+                            <Popconfirm
+                                title="Oscurare questo evento?"
+                                description="L'evento non sara' piu' visibile nel feed pubblico."
+                                okText="Conferma"
+                                cancelText="Annulla"
+                                onConfirm={async () => {
                                     try {
                                         await hideEvent.mutateAsync(record.targetId);
                                         await handleResolve(record.id);
-                                        messageApi.success("Evento nascosto");
+                                        messageApi.success("Evento oscurato");
                                     } catch (err) {
-                                        messageApi.error(getErrorMessage(err, "Errore hide evento"));
+                                        messageApi.error(getErrorMessage(err, "Errore oscuramento evento"));
                                     }
                                 }}
                             >
-                                Nascondi
-                            </Button>
+                                <Button size="small">Oscura</Button>
+                            </Popconfirm>
                         )}
                         {record.targetType === "CLUB" && (
-                            <Button
-                                size="small"
-                                onClick={async () => {
+                            <Popconfirm
+                                title={record.targetSuspended ? "Ripristinare questo club?" : "Sospendere questo club?"}
+                                description={
+                                    record.targetSuspended
+                                        ? "Il club tornera' visibile nelle liste pubbliche."
+                                        : "Il club non sara' piu' visibile nelle liste pubbliche."
+                                }
+                                okText="Conferma"
+                                cancelText="Annulla"
+                                onConfirm={async () => {
                                     try {
-                                        await suspendClub.mutateAsync(record.targetId);
+                                        if (record.targetSuspended) {
+                                            await restoreClub.mutateAsync(record.targetId);
+                                            messageApi.success("Club ripristinato");
+                                        } else {
+                                            await suspendClub.mutateAsync(record.targetId);
+                                            messageApi.success("Club sospeso");
+                                        }
                                         await handleResolve(record.id);
-                                        messageApi.success("Club sospeso");
                                     } catch (err) {
-                                        messageApi.error(getErrorMessage(err, "Errore sospensione club"));
+                                        messageApi.error(getErrorMessage(err, "Errore azione club"));
                                     }
                                 }}
                             >
-                                Sospendi
-                            </Button>
+                                <Button size="small">
+                                    {record.targetSuspended ? "Ripristina" : "Sospendi"}
+                                </Button>
+                            </Popconfirm>
                         )}
                     </Space>
                 ),
             },
         ],
-        [deleteComment, hideEvent, messageApi, suspendClub, updateStatus]
+        [hideEvent, messageApi, restoreClub, suspendClub, updateStatus]
     );
 
     return (

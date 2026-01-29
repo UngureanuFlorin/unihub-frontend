@@ -30,3 +30,13 @@ export function useSuspendClubModeration() {
         },
     });
 }
+
+export function useRestoreClubModeration() {
+    return useMutation({
+        mutationKey: ["moderation-restore-club"],
+        mutationFn: async (clubId) => {
+            const { data } = await api.post(`/moderation/clubs/${clubId}/restore`);
+            return data;
+        },
+    });
+}
