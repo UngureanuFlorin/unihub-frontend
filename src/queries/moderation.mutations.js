@@ -14,8 +14,22 @@ export function useDeleteCommentModeration() {
 export function useHideEventModeration() {
     return useMutation({
         mutationKey: ["moderation-hide-event"],
-        mutationFn: async (eventId) => {
-            const { data } = await api.post(`/moderation/events/${eventId}/hide`);
+        mutationFn: async ({ eventId, actorId }) => {
+            const { data } = await api.post(`/moderation/events/${eventId}/hide`, null, {
+                params: { actorId },
+            });
+            return data;
+        },
+    });
+}
+
+export function useRestoreEventModeration() {
+    return useMutation({
+        mutationKey: ["moderation-restore-event"],
+        mutationFn: async ({ eventId, actorId }) => {
+            const { data } = await api.post(`/moderation/events/${eventId}/restore`, null, {
+                params: { actorId },
+            });
             return data;
         },
     });
@@ -24,8 +38,10 @@ export function useHideEventModeration() {
 export function useSuspendClubModeration() {
     return useMutation({
         mutationKey: ["moderation-suspend-club"],
-        mutationFn: async (clubId) => {
-            const { data } = await api.post(`/moderation/clubs/${clubId}/suspend`);
+        mutationFn: async ({ clubId, actorId }) => {
+            const { data } = await api.post(`/moderation/clubs/${clubId}/suspend`, null, {
+                params: { actorId },
+            });
             return data;
         },
     });
@@ -34,8 +50,10 @@ export function useSuspendClubModeration() {
 export function useRestoreClubModeration() {
     return useMutation({
         mutationKey: ["moderation-restore-club"],
-        mutationFn: async (clubId) => {
-            const { data } = await api.post(`/moderation/clubs/${clubId}/restore`);
+        mutationFn: async ({ clubId, actorId }) => {
+            const { data } = await api.post(`/moderation/clubs/${clubId}/restore`, null, {
+                params: { actorId },
+            });
             return data;
         },
     });

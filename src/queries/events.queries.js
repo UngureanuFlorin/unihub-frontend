@@ -29,6 +29,8 @@ function toUiEvent(dto) {
         title: dto.titolo,
         summary: dto.descrizione,
         description: dto.descrizione,
+        category: dto.categoria || "",
+        university: dto.universita || "",
         date: formatRaw(dto.dataInizio),
         datePretty: formatPretty(dto.dataInizio),
         place: dto.luogo,
@@ -42,6 +44,8 @@ function toUiEventDetail(dto) {
         title: dto.titolo,
         summary: dto.descrizione,
         description: dto.descrizione,
+        category: dto.categoria || "",
+        university: dto.universita || "",
         date: formatRaw(dto.dataInizio),
         datePretty: formatPretty(dto.dataInizio),
         endDate: formatRaw(dto.dataFine),
@@ -74,8 +78,15 @@ export async function fetchEvents(filters = {}) {
     // NB: se apiClient ha baseURL già con /api, qui basta "/eventi/search"
     const res = await api.get("/eventi/search", { params });
 
+<<<<<<< Updated upstream
     // backend ritorna array di DTO
     if (Array.isArray(res.data)) return res.data.map(toUiEvent);
+=======
+// 🔹 Recupera una pagina di eventi (lista)
+export async function fetchEventsPage({ page = 0, size = 9, ...filters }) {
+    const res = await api.get("/eventi", { params: { page, size, ...filters } });
+    const data = res.data;
+>>>>>>> Stashed changes
 
     // fallback (se per sbaglio arriva altro)
     return [];

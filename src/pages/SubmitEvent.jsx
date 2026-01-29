@@ -1,6 +1,7 @@
 import React from "react";
-import { Card, Form, Input, DatePicker, InputNumber, Button, message } from "antd";
+import { Card, Form, Input, DatePicker, InputNumber, Button, message, Select } from "antd";
 import { useCreateEvent } from "../queries/events.mutations";
+import { useUniversitaList } from "../queries/universita.queries.js";
 import { getErrorMessage } from "../utils/error.js";
 
 const { TextArea } = Input;
@@ -10,6 +11,7 @@ function SubmitEvent() {
     const [form] = Form.useForm();
     const createEventMutation = useCreateEvent();
     const [messageApi, contextHolder] = message.useMessage();
+    const { data: universitaList = [] } = useUniversitaList();
 
     const onFinish = async (values) => {
         try {
@@ -24,6 +26,8 @@ function SubmitEvent() {
             const eventPayload = {
                 titolo: values.title,
                 descrizione: values.description,
+                categoria: values.category,
+                universita: values.university,
                 luogo: values.place,
                 dataInizio: start.toISOString(),
                 dataFine: end.toISOString(),
@@ -79,6 +83,37 @@ function SubmitEvent() {
                         ]}
                     >
                         <TextArea rows={5} placeholder="Descrivi brevemente l'evento..." showCount />
+                    </Form.Item>
+
+                    <Form.Item
+                        name="category"
+                        label="Categoria"
+                        rules={[{ required: true, message: "Seleziona una categoria" }]}
+                    >
+                        <Select
+                            placeholder="Seleziona categoria"
+                            options={[
+                                { value: "accademico", label: "Accademico" },
+                                { value: "sport", label: "Sport" },
+                                { value: "cultura", label: "Cultura" },
+                                { value: "carriera", label: "Carriera" },
+                                { value: "volontariato", label: "Volontariato" },
+                            ]}
+                        />
+                    </Form.Item>
+
+                    <Form.Item
+                        name="university"
+                        label="Università"
+                        rules={[{ required: true, message: "Seleziona un ateneo" }]}
+                    >
+                        <Select
+                            placeholder="Seleziona università"
+                            options={universitaList.map((u) => ({
+                                value: u.nome,
+                                label: u.nome,
+                            }))}
+                        />
                     </Form.Item>
 
                     <Form.Item

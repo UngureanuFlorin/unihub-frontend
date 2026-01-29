@@ -21,8 +21,8 @@ export function useUpdateReportStatus() {
 
     return useMutation({
         mutationKey: ["update-report-status"],
-        mutationFn: async ({ reportId, status }) => {
-            const { data } = await api.patch(`/reports/${reportId}`, { status });
+        mutationFn: async ({ reportId, status, actorId }) => {
+            const { data } = await api.patch(`/reports/${reportId}`, { status }, { params: { actorId } });
             return data;
         },
         onSuccess: () => {

@@ -95,7 +95,7 @@ export default function EmailLogs() {
                 <Card>
                     <Space align="center" style={{ justifyContent: "space-between", width: "100%" }}>
                         <Title level={3} style={{ margin: 0 }}>
-                            Storico email
+                            Email history
                         </Title>
                         <Space>
                             <Select

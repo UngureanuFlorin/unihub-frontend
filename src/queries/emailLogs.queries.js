@@ -3,13 +3,15 @@ import { api } from "../api/apiClient.js";
 
 export function useEmailLogs({ status, type } = {}) {
     return useQuery({
-        queryKey: ["email-logs", status || "all", type || "all"],
+        queryKey: ["email-history", status || "all", type || "all"],
         queryFn: async () => {
             const params = new URLSearchParams();
             if (status) params.set("status", status);
             if (type) params.set("type", type);
+            const actorId = JSON.parse(localStorage.getItem("user") || "{}")?.id;
+            if (actorId) params.set("actorId", actorId);
             const suffix = params.toString() ? `?${params.toString()}` : "";
-            const { data } = await api.get(`/email-logs${suffix}`);
+            const { data } = await api.get(`/email-history${suffix}`);
             return data;
         },
     });

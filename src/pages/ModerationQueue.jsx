@@ -4,8 +4,10 @@ import { Link } from "react-router-dom";
 import { useReports } from "../queries/reports.queries.js";
 import { useUpdateReportStatus } from "../queries/reports.mutations.js";
 import { getErrorMessage } from "../utils/error.js";
+import useAuth from "../hooks/useAuth.js";
 import {
     useHideEventModeration,
+    useRestoreEventModeration,
     useRestoreClubModeration,
     useSuspendClubModeration,
 } from "../queries/moderation.mutations.js";
@@ -35,15 +37,18 @@ const STATUS_COLOR = {
 export default function ModerationQueue() {
     const [status, setStatus] = useState("NEW");
     const [type, setType] = useState(undefined);
-    const { data: reports = [], isLoading } = useReports({ status, type });
+    const { user } = useAuth();
+    const actorId = user?.id;
+    const { data: reports = [], isLoading } = useReports({ status, type, actorId });
     const updateStatus = useUpdateReportStatus();
     const hideEvent = useHideEventModeration();
+    const restoreEvent = useRestoreEventModeration();
     const suspendClub = useSuspendClubModeration();
     const restoreClub = useRestoreClubModeration();
     const [messageApi, contextHolder] = message.useMessage();
 
     const handleResolve = async (reportId) => {
-        await updateStatus.mutateAsync({ reportId, status: "RESOLVED" });
+        await updateStatus.mutateAsync({ reportId, status: "RESOLVED", actorId });
     };
 
     const columns = useMemo(
@@ -59,7 +64,17 @@ export default function ModerationQueue() {
                 dataIndex: "targetSummary",
                 render: (_, record) => {
                     if (record.targetType === "EVENT") {
-                        return <Link to={`/events/${record.targetId}`}>{record.targetSummary}</Link>;
+                        const eventLabel = record.targetSummary;
+                        return (
+                            <Space size="small">
+                                {record.targetHidden ? (
+                                    <Text>{eventLabel}</Text>
+                                ) : (
+                                    <Link to={`/events/${record.targetId}`}>{eventLabel}</Link>
+                                )}
+                                {record.targetHidden && <Tag color="volcano">Oscurato</Tag>}
+                            </Space>
+                        );
                     }
                     if (record.targetType === "CLUB") {
                         const clubLabel = record.targetSummary;
@@ -113,6 +128,7 @@ export default function ModerationQueue() {
                                     await updateStatus.mutateAsync({
                                         reportId: record.id,
                                         status: next,
+                                        actorId,
                                     });
                                     messageApi.success("Stato aggiornato");
                                 } catch (err) {
@@ -123,21 +139,38 @@ export default function ModerationQueue() {
                         />
                         {record.targetType === "EVENT" && (
                             <Popconfirm
-                                title="Oscurare questo evento?"
-                                description="L'evento non sara' piu' visibile nel feed pubblico."
+                                title={record.targetHidden ? "Ripristinare questo evento?" : "Oscurare questo evento?"}
+                                description={
+                                    record.targetHidden
+                                        ? "L'evento tornera' visibile nel feed pubblico."
+                                        : "L'evento non sara' piu' visibile nel feed pubblico."
+                                }
                                 okText="Conferma"
                                 cancelText="Annulla"
                                 onConfirm={async () => {
                                     try {
-                                        await hideEvent.mutateAsync(record.targetId);
+                                        if (record.targetHidden) {
+                                            await restoreEvent.mutateAsync({
+                                                eventId: record.targetId,
+                                                actorId,
+                                            });
+                                            messageApi.success("Evento ripristinato");
+                                        } else {
+                                            await hideEvent.mutateAsync({
+                                                eventId: record.targetId,
+                                                actorId,
+                                            });
+                                            messageApi.success("Evento oscurato");
+                                        }
                                         await handleResolve(record.id);
-                                        messageApi.success("Evento oscurato");
                                     } catch (err) {
-                                        messageApi.error(getErrorMessage(err, "Errore oscuramento evento"));
+                                        messageApi.error(getErrorMessage(err, "Errore azione evento"));
                                     }
                                 }}
                             >
-                                <Button size="small">Oscura</Button>
+                                <Button size="small">
+                                    {record.targetHidden ? "Ripristina" : "Oscura"}
+                                </Button>
                             </Popconfirm>
                         )}
                         {record.targetType === "CLUB" && (
@@ -153,10 +186,16 @@ export default function ModerationQueue() {
                                 onConfirm={async () => {
                                     try {
                                         if (record.targetSuspended) {
-                                            await restoreClub.mutateAsync(record.targetId);
+                                            await restoreClub.mutateAsync({
+                                                clubId: record.targetId,
+                                                actorId,
+                                            });
                                             messageApi.success("Club ripristinato");
                                         } else {
-                                            await suspendClub.mutateAsync(record.targetId);
+                                            await suspendClub.mutateAsync({
+                                                clubId: record.targetId,
+                                                actorId,
+                                            });
                                             messageApi.success("Club sospeso");
                                         }
                                         await handleResolve(record.id);
@@ -174,7 +213,7 @@ export default function ModerationQueue() {
                 ),
             },
         ],
-        [hideEvent, messageApi, restoreClub, suspendClub, updateStatus]
+        [hideEvent, messageApi, restoreClub, restoreEvent, suspendClub, updateStatus]
     );
 
     return (

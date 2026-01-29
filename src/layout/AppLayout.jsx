@@ -2,13 +2,18 @@ import React from "react";
 import { Layout, Menu } from "antd";
 import { Link, Outlet, useLocation } from "react-router-dom";
 import { HomeOutlined, CalendarOutlined, PlusCircleOutlined, SafetyOutlined, MailOutlined } from "@ant-design/icons";
+import useAuth from "../hooks/useAuth.js";
 
 const { Sider, Content } = Layout;
 
 function AppLayout() {
     const { pathname } = useLocation();
+    const { user } = useAuth();
+    const isSuperAdmin = user?.role === "SUPERADMIN";
     const selected = pathname.startsWith("/create/event")
         ? "create-event"
+        : pathname.startsWith("/moderation/emails")
+        ? "moderation-emails"
         : pathname.split("/")[1] || "home";
 
     return (
@@ -23,8 +28,12 @@ function AppLayout() {
                         { key: "home", icon: <HomeOutlined />, label: <Link to="/home">Home</Link> },
                         { key: "events", icon: <CalendarOutlined />, label: <Link to="/events">Eventi</Link> },
                         { key: "create-event", icon: <PlusCircleOutlined />, label: <Link to="/create/event">Proponi</Link> },
-                        { key: "moderation", icon: <SafetyOutlined />, label: <Link to="/moderation/queue">Moderazione</Link> },
-                        { key: "moderation-emails", icon: <MailOutlined />, label: <Link to="/moderation/emails">Email log</Link> },
+                        ...(isSuperAdmin
+                            ? [
+                                  { key: "moderation", icon: <SafetyOutlined />, label: <Link to="/moderation/queue">Moderazione</Link> },
+                                  { key: "moderation-emails", icon: <MailOutlined />, label: <Link to="/moderation/emails">Email history</Link> },
+                              ]
+                            : []),
                     ]}
                 />
             </Sider>

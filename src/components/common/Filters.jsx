@@ -2,8 +2,16 @@ import React from "react";
 import { Card, Row, Col, Select, DatePicker, Space, Tag } from "antd";
 const { RangePicker } = DatePicker;
 
-export default function Filters({ value, onChange, onQuickTag }) {
+export default function Filters({ value, onChange, onQuickTag, universities = [] }) {
     const set = (patch) => onChange({ ...value, ...patch });
+
+    const universityOptions = [
+        { value: "", label: "Tutti gli atenei" },
+        ...universities.map((u) => ({
+            value: u.nome,
+            label: u.nome,
+        })),
+    ];
 
     return (
         <Card style={{ marginTop: 16 }}>
@@ -29,11 +37,7 @@ export default function Filters({ value, onChange, onQuickTag }) {
                         style={{ width: "100%" }}
                         placeholder="Ateneo"
                         value={value.university}
-                        options={[
-                            { value: "", label: "Tutti gli atenei" },
-                            { value: "unimi", label: "Università degli Studi di Milano" },
-                            { value: "polimi", label: "Politecnico di Milano" },
-                        ]}
+                        options={universityOptions}
                         onChange={(v) => set({ university: v })}
                     />
                 </Col>

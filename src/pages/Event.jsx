@@ -1,6 +1,11 @@
 import React, { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+<<<<<<< Updated upstream
 import {useEvents} from "../queries/events.queries";
+=======
+import { useInfiniteEvents } from "../queries/events.queries";
+import { useUniversitaList } from "../queries/universita.queries.js";
+>>>>>>> Stashed changes
 import Hero from "../components/common/Hero.jsx";
 import Filters from "../components/common/Filters.jsx";
 import List from "../components/common/List.jsx";
@@ -12,10 +17,10 @@ export default function Event() {
         search: "",
         category: "",
         university: "",
-        faculty: "",
         dateRange: null,
     });
 
+<<<<<<< Updated upstream
     const toLocalDateTimeParam = (d) => {
         if (!d) return undefined;
 
@@ -37,6 +42,20 @@ export default function Event() {
             to: toLocalDateTimeParam(end),
         };
     }, [filters]);
+=======
+    const { data: universitaList = [] } = useUniversitaList();
+
+    const params = useMemo(
+        () => ({
+            search: filters.search,
+            category: filters.category,
+            university: filters.university,
+            startDate: filters.dateRange?.[0]?.toISOString(),
+            endDate: filters.dateRange?.[1]?.toISOString(),
+        }),
+        [filters]
+    );
+>>>>>>> Stashed changes
 
     const { data: items = [], isLoading, isError } = useEvents(params);
 
@@ -53,6 +72,7 @@ export default function Event() {
                 value={filters}
                 onChange={setFilters}
                 onQuickTag={(tag) => setFilters((f) => ({ ...f, search: tag }))}
+                universities={universitaList}
             />
 
             <List
