@@ -21,7 +21,7 @@ import ProtectedRoute from "../layout/ProtectedRoute.jsx";
 import Inbox from "../pages/Inbox.jsx";
 import ForgotPassword from "../pages/ForgotPassword.jsx";
 import ModerationQueue from "../pages/ModerationQueue.jsx";
-import EmailLogs from "../pages/EmailLogs.jsx";
+import EmailHistory from "../pages/EmailLogs.jsx";
 
 function RouteWithAuth({ children, protect = false }) {
     const { user, loading } = useAuth();
@@ -172,8 +172,8 @@ const router = createBrowserRouter([
                 path: "moderation/emails",
                 element: (
                     <RouteWithAuth protect>
-                        <ProtectedRoute allow={["SUPERADMIN"]}>
-                            <EmailLogs />
+                            <ProtectedRoute allow={["SUPERADMIN"]}>
+                            <EmailHistory />
                         </ProtectedRoute>
                     </RouteWithAuth>
                 ),
