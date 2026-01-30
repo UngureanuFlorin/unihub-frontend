@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import {
     Alert,
     Button,
@@ -6,14 +6,15 @@ import {
     Form,
     Grid,
     Input,
-    message,
     Modal,
     Select,
     Spin,
     Switch,
     Tabs,
     Upload,
+    message,
 } from "antd";
+import { UploadOutlined } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import { EventsTab, CommentsTab } from "../components/profile/ProfileTabs.jsx";
 import ProfileHeader from "../components/profile/ProfileHeader.jsx";
@@ -22,7 +23,6 @@ import { useUserProfile } from "../queries/users.queries.js";
 import { useCommentsByAuthor } from "../queries/comments.queries.js";
 import { useUpdateUserProfile, useUploadProfileImage } from "../queries/users.mutations.js";
 import { useDipartimenti, useUniversitaList } from "../queries/universita.queries.js";
-import { UploadOutlined } from "@ant-design/icons";
 import { useReportSupport } from "../queries/support.mutations.js";
 import { getErrorMessage } from "../utils/error.js";
 
@@ -31,51 +31,125 @@ const { useBreakpoint } = Grid;
 export default function Profile() {
     const screens = useBreakpoint();
     const navigate = useNavigate();
+
     const { user, logout } = useAuth();
+    const userId = user?.id;
+
     const [messageApi, contextHolder] = message.useMessage();
-    const [editOpen, setEditOpen] = useState(false);
-    const [reportOpen, setReportOpen] = useState(false);
-    const [selectedUniId, setSelectedUniId] = useState(null);
-    const [fileList, setFileList] = useState([]);
+
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [isSupportModalOpen, setIsSupportModalOpen] = useState(false);
+
+    const [selectedUniversityId, setSelectedUniversityId] = useState(null);
+    const [profileImageFileList, setProfileImageFileList] = useState([]);
+
     const [form] = Form.useForm();
-    const [reportForm] = Form.useForm();
+    const [supportForm] = Form.useForm();
 
-    // ✅ Dati utente e commenti
-    const { data: p, status, error } = useUserProfile(user?.id);
-    const { data: commentsData, isLoading: loadingComments } = useCommentsByAuthor(user?.id);
-    const updateProfile = useUpdateUserProfile();
-    const uploadProfileImage = useUploadProfileImage();
-    const reportSupport = useReportSupport();
-    const { data: universita = [] } = useUniversitaList();
-    const { data: dipartimenti = [] } = useDipartimenti(selectedUniId);
+    const { data: profile, status, error } = useUserProfile(userId);
+    const { data: commentsData, isLoading: isCommentsLoading } = useCommentsByAuthor(userId);
 
+    const updateProfileMutation = useUpdateUserProfile();
+    const uploadProfileImageMutation = useUploadProfileImage();
+    const reportSupportMutation = useReportSupport();
+
+    const { data: universities = [] } = useUniversitaList();
+    const { data: departments = [] } = useDipartimenti(selectedUniversityId);
 
     useEffect(() => {
-        if (!editOpen || !p) return;
-        setSelectedUniId(p.universitaId || null);
-        setFileList([]);
+        if (!isEditModalOpen || !profile) return;
+
+        setSelectedUniversityId(profile.universitaId || null);
+        setProfileImageFileList([]);
+
         form.setFieldsValue({
-            name: p.name,
-            surname: p.surname,
-            username: p.username,
-            email: p.email,
-            studentId: p.studentId,
-            universitaId: p.universitaId ?? null,
-            dipartimentoId: p.dipartimentoId ?? null,
-            emailNotificationsEnabled: p.emailNotificationsEnabled ?? true,
+            name: profile.name,
+            surname: profile.surname,
+            username: profile.username,
+            email: profile.email,
+            studentId: profile.studentId,
+            universitaId: profile.universitaId ?? null,
+            dipartimentoId: profile.dipartimentoId ?? null,
+            emailNotificationsEnabled: profile.emailNotificationsEnabled ?? true,
         });
-    }, [editOpen, form, p]);
+    }, [isEditModalOpen, form, profile]);
 
     useEffect(() => {
-        if (!reportOpen || !p) return;
-        reportForm.setFieldsValue({
-            name: `${p.name} ${p.surname}`.trim(),
-            email: p.email || "",
+        if (!isSupportModalOpen || !profile) return;
+
+        supportForm.setFieldsValue({
+            name: `${profile.name} ${profile.surname}`.trim(),
+            email: profile.email || "",
             subject: "Segnalazione UniHub",
         });
-    }, [reportOpen, p, reportForm]);
+    }, [isSupportModalOpen, profile, supportForm]);
 
-    // 🔄 Loading profilo
+    const handleLogout = () => {
+        logout();
+        messageApi.success("Logout effettuato");
+        navigate("/login");
+    };
+
+    const handleSaveProfile = async () => {
+        if (!profile) return;
+
+        try {
+            const values = await form.validateFields();
+
+            const payload = {
+                name: values.name,
+                surname: values.surname,
+                username: values.username,
+                email: values.email,
+                studentId: values.studentId,
+                dipartimentoId: values.dipartimentoId ?? profile.dipartimentoId ?? null,
+                emailNotificationsEnabled: values.emailNotificationsEnabled,
+            };
+
+            const updated = await updateProfileMutation.mutateAsync({
+                userId: profile.id,
+                payload,
+            });
+
+            const selectedFile = profileImageFileList[0]?.originFileObj || null;
+            if (selectedFile) {
+                await uploadProfileImageMutation.mutateAsync({
+                    userId: profile.id,
+                    file: selectedFile,
+                });
+            }
+
+            localStorage.setItem(
+                "user",
+                JSON.stringify({
+                    id: updated.id,
+                    username: updated.username,
+                    role: updated.role,
+                })
+            );
+
+            messageApi.success("Profilo aggiornato");
+            setIsEditModalOpen(false);
+        } catch (err) {
+            if (err?.errorFields) return;
+            messageApi.error(getErrorMessage(err, "Errore aggiornamento profilo"));
+        }
+    };
+
+    const handleSubmitSupport = async () => {
+        try {
+            const values = await supportForm.validateFields();
+            await reportSupportMutation.mutateAsync(values);
+
+            messageApi.success("Segnalazione inviata");
+            setIsSupportModalOpen(false);
+            supportForm.resetFields();
+        } catch (err) {
+            if (err?.errorFields) return;
+            messageApi.error(getErrorMessage(err, "Errore invio segnalazione"));
+        }
+    };
+
     if (status === "pending") {
         return (
             <div style={{ textAlign: "center", marginTop: 80 }}>
@@ -84,7 +158,6 @@ export default function Profile() {
         );
     }
 
-    // ❌ Errore caricamento
     if (status === "error") {
         return (
             <div style={{ padding: 24 }}>
@@ -100,24 +173,20 @@ export default function Profile() {
         );
     }
 
-    if (!p) return null;
+    if (!profile) return null;
 
-    // ✅ Tabs (eventi e commenti)
     const tabs = [
         {
             key: "events",
             label: "Eventi creati",
             children: (
-                <EventsTab
-                    events={p.recentEvents || []}
-                    onOpen={(id) => navigate(`/events/${id}`)}
-                />
+                <EventsTab events={profile.recentEvents || []} onOpen={(id) => navigate(`/events/${id}`)} />
             ),
         },
         {
             key: "comments",
             label: "Commenti",
-            children: loadingComments ? (
+            children: isCommentsLoading ? (
                 <Spin size="large" tip="Caricamento commenti..." />
             ) : (
                 <CommentsTab
@@ -132,7 +201,6 @@ export default function Profile() {
         <div style={{ padding: screens.xs ? 12 : 24 }}>
             {contextHolder}
 
-            {/* HEADER con titolo e logout */}
             <div
                 style={{
                     display: "flex",
@@ -144,79 +212,27 @@ export default function Profile() {
                 <h2 style={{ margin: 0 }}>Profilo</h2>
 
                 <div style={{ display: "flex", gap: 12 }}>
-                    <Button onClick={() => setReportOpen(true)}>Segnala un problema</Button>
-                    <Button onClick={() => setEditOpen(true)}>Modifica profilo</Button>
-                    <Button
-                        danger
-                        type="primary"
-                        onClick={() => {
-                            logout();
-                            messageApi.success("Logout effettuato");
-                            navigate("/login");
-                        }}
-                    >
+                    <Button onClick={() => setIsSupportModalOpen(true)}>Segnala un problema</Button>
+                    <Button onClick={() => setIsEditModalOpen(true)}>Modifica profilo</Button>
+                    <Button danger type="primary" onClick={handleLogout}>
                         Logout
                     </Button>
                 </div>
             </div>
 
-            {/* HEADER PROFILO */}
-            <ProfileHeader p={p} />
+            <ProfileHeader p={profile} />
 
-            {/* TABS */}
             <Card variant="outlined" style={{ marginTop: 16, borderRadius: 16 }}>
-                <Tabs
-                    defaultActiveKey="events"
-                    items={tabs}
-                    tabBarGutter={24}
-                    destroyInactiveTabPane
-                />
+                <Tabs defaultActiveKey="events" items={tabs} tabBarGutter={24} destroyInactiveTabPane />
             </Card>
 
             <Modal
                 title="Modifica profilo"
-                open={editOpen}
-                onCancel={() => setEditOpen(false)}
+                open={isEditModalOpen}
+                onCancel={() => setIsEditModalOpen(false)}
                 okText="Salva"
-                confirmLoading={updateProfile.isPending}
-                onOk={async () => {
-                    try {
-                        const values = await form.validateFields();
-                        const payload = {
-                            name: values.name,
-                            surname: values.surname,
-                            username: values.username,
-                            email: values.email,
-                            studentId: values.studentId,
-                            dipartimentoId: values.dipartimentoId ?? p.dipartimentoId ?? null,
-                            emailNotificationsEnabled: values.emailNotificationsEnabled,
-                        };
-                        const updated = await updateProfile.mutateAsync({
-                            userId: p.id,
-                            payload,
-                        });
-                        const selectedFile = fileList[0]?.originFileObj || null;
-                        if (selectedFile) {
-                            await uploadProfileImage.mutateAsync({
-                                userId: p.id,
-                                file: selectedFile,
-                            });
-                        }
-                        localStorage.setItem(
-                            "user",
-                            JSON.stringify({
-                                id: updated.id,
-                                username: updated.username,
-                                role: updated.role,
-                            })
-                        );
-                        messageApi.success("Profilo aggiornato");
-                        setEditOpen(false);
-                    } catch (err) {
-                        if (err?.errorFields) return;
-                        messageApi.error(getErrorMessage(err, "Errore aggiornamento profilo"));
-                    }
-                }}
+                confirmLoading={updateProfileMutation.isPending}
+                onOk={handleSaveProfile}
             >
                 <Form form={form} layout="vertical">
                     <Form.Item
@@ -226,6 +242,7 @@ export default function Profile() {
                     >
                         <Input />
                     </Form.Item>
+
                     <Form.Item
                         label="Cognome"
                         name="surname"
@@ -233,6 +250,7 @@ export default function Profile() {
                     >
                         <Input />
                     </Form.Item>
+
                     <Form.Item
                         label="Username"
                         name="username"
@@ -240,6 +258,7 @@ export default function Profile() {
                     >
                         <Input />
                     </Form.Item>
+
                     <Form.Item
                         label="Email"
                         name="email"
@@ -250,6 +269,7 @@ export default function Profile() {
                     >
                         <Input />
                     </Form.Item>
+
                     <Form.Item
                         label="Matricola"
                         name="studentId"
@@ -257,6 +277,7 @@ export default function Profile() {
                     >
                         <Input />
                     </Form.Item>
+
                     <Form.Item
                         label="Universita"
                         name="universitaId"
@@ -264,16 +285,14 @@ export default function Profile() {
                     >
                         <Select
                             placeholder="Seleziona universita"
-                            options={(universita || []).map((u) => ({
-                                value: u.id,
-                                label: u.nome,
-                            }))}
+                            options={universities.map((u) => ({ value: u.id, label: u.nome }))}
                             onChange={(value) => {
-                                setSelectedUniId(value);
+                                setSelectedUniversityId(value);
                                 form.setFieldsValue({ dipartimentoId: null });
                             }}
                         />
                     </Form.Item>
+
                     <Form.Item
                         label="Dipartimento"
                         name="dipartimentoId"
@@ -281,13 +300,11 @@ export default function Profile() {
                     >
                         <Select
                             placeholder="Seleziona dipartimento"
-                            disabled={!selectedUniId}
-                            options={(dipartimenti || []).map((d) => ({
-                                value: d.id,
-                                label: d.nome,
-                            }))}
+                            disabled={!selectedUniversityId}
+                            options={departments.map((d) => ({ value: d.id, label: d.nome }))}
                         />
                     </Form.Item>
+
                     <Form.Item
                         label="Notifiche email"
                         name="emailNotificationsEnabled"
@@ -295,14 +312,17 @@ export default function Profile() {
                     >
                         <Switch checkedChildren="On" unCheckedChildren="Off" />
                     </Form.Item>
+
                     <Form.Item label="Foto profilo">
                         <Upload
                             beforeUpload={() => false}
                             maxCount={1}
                             accept="image/*"
-                            onChange={({ fileList: nextList }) => setFileList(nextList.slice(-1))}
-                            onRemove={() => setFileList([])}
-                            fileList={fileList}
+                            fileList={profileImageFileList}
+                            onChange={({ fileList: nextList }) =>
+                                setProfileImageFileList(nextList.slice(-1))
+                            }
+                            onRemove={() => setProfileImageFileList([])}
                         >
                             <Button icon={<UploadOutlined />}>Carica immagine</Button>
                         </Upload>
@@ -312,24 +332,13 @@ export default function Profile() {
 
             <Modal
                 title="Segnala un problema"
-                open={reportOpen}
-                onCancel={() => setReportOpen(false)}
+                open={isSupportModalOpen}
+                onCancel={() => setIsSupportModalOpen(false)}
                 okText="Invia"
-                confirmLoading={reportSupport.isPending}
-                onOk={async () => {
-                    try {
-                        const values = await reportForm.validateFields();
-                        await reportSupport.mutateAsync(values);
-                        messageApi.success("Segnalazione inviata");
-                        setReportOpen(false);
-                        reportForm.resetFields();
-                    } catch (err) {
-                        if (err?.errorFields) return;
-                        messageApi.error(getErrorMessage(err, "Errore invio segnalazione"));
-                    }
-                }}
+                confirmLoading={reportSupportMutation.isPending}
+                onOk={handleSubmitSupport}
             >
-                <Form form={reportForm} layout="vertical">
+                <Form form={supportForm} layout="vertical">
                     <Form.Item
                         label="Nome"
                         name="name"
@@ -337,6 +346,7 @@ export default function Profile() {
                     >
                         <Input />
                     </Form.Item>
+
                     <Form.Item
                         label="Email"
                         name="email"
@@ -347,9 +357,11 @@ export default function Profile() {
                     >
                         <Input />
                     </Form.Item>
+
                     <Form.Item label="Oggetto" name="subject">
                         <Input />
                     </Form.Item>
+
                     <Form.Item
                         label="Messaggio"
                         name="message"

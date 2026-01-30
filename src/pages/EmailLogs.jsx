@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Button, Card, Modal, Select, Space, Table, Tag, Typography } from "antd";
 import dayjs from "dayjs";
 import { useEmailLogs } from "../queries/emailLogs.queries.js";
@@ -26,10 +26,14 @@ const STATUS_COLOR = {
 };
 
 export default function EmailLogs() {
-    const [status, setStatus] = useState(undefined);
-    const [type, setType] = useState(undefined);
-    const [selected, setSelected] = useState(null);
-    const { data: logs = [], isLoading } = useEmailLogs({ status, type });
+    const [statusFilter, setStatusFilter] = useState(undefined);
+    const [typeFilter, setTypeFilter] = useState(undefined);
+    const [selectedLog, setSelectedLog] = useState(null);
+
+    const { data: logs = [], isLoading } = useEmailLogs({
+        status: statusFilter,
+        type: typeFilter,
+    });
 
     const columns = useMemo(
         () => [
@@ -37,13 +41,13 @@ export default function EmailLogs() {
                 title: "Data",
                 dataIndex: "createdAt",
                 width: 170,
-                render: (value) => (value ? dayjs(value).format("DD MMM YYYY, HH:mm") : "-")
+                render: (value) => (value ? dayjs(value).format("DD MMM YYYY, HH:mm") : "-"),
             },
             {
                 title: "Destinatario",
                 dataIndex: "toEmail",
-                render: (value) => <Text>{value}</Text>,
                 width: 220,
+                render: (value) => <Text>{value}</Text>,
             },
             {
                 title: "Oggetto",
@@ -68,10 +72,9 @@ export default function EmailLogs() {
             },
             {
                 title: "Azioni",
-                dataIndex: "actions",
                 width: 120,
                 render: (_, record) => (
-                    <Button size="small" onClick={() => setSelected(record)}>
+                    <Button size="small" onClick={() => setSelectedLog(record)}>
                         Vedi
                     </Button>
                 ),
@@ -80,14 +83,18 @@ export default function EmailLogs() {
         []
     );
 
-    const modalBody = selected?.html ? (
-        <div
-            style={{ background: "#fff", padding: 16, borderRadius: 8 }}
-            dangerouslySetInnerHTML={{ __html: selected?.body || "" }}
-        />
-    ) : (
-        <pre style={{ whiteSpace: "pre-wrap", margin: 0 }}>{selected?.body || ""}</pre>
-    );
+    const isModalOpen = Boolean(selectedLog);
+    const emailBody = selectedLog?.body || "";
+
+    const modalBody =
+        selectedLog?.html ? (
+            <div
+                style={{ background: "#fff", padding: 16, borderRadius: 8 }}
+                dangerouslySetInnerHTML={{ __html: emailBody }}
+            />
+        ) : (
+            <pre style={{ whiteSpace: "pre-wrap", margin: 0 }}>{emailBody}</pre>
+        );
 
     return (
         <div style={{ padding: 24 }}>
@@ -97,21 +104,22 @@ export default function EmailLogs() {
                         <Title level={3} style={{ margin: 0 }}>
                             Storico email
                         </Title>
+
                         <Space>
                             <Select
                                 allowClear
                                 placeholder="Stato"
-                                value={status}
+                                value={statusFilter}
                                 options={STATUS_OPTIONS}
-                                onChange={setStatus}
+                                onChange={setStatusFilter}
                                 style={{ width: 160 }}
                             />
                             <Select
                                 allowClear
                                 placeholder="Tipo"
-                                value={type}
+                                value={typeFilter}
                                 options={TYPE_OPTIONS}
-                                onChange={setType}
+                                onChange={setTypeFilter}
                                 style={{ width: 180 }}
                             />
                         </Space>
@@ -128,30 +136,32 @@ export default function EmailLogs() {
             </Space>
 
             <Modal
-                open={Boolean(selected)}
-                title={selected?.subject}
-                onCancel={() => setSelected(null)}
+                open={isModalOpen}
+                title={selectedLog?.subject}
+                onCancel={() => setSelectedLog(null)}
                 footer={null}
                 width={760}
             >
                 <Space direction="vertical" size="small" style={{ width: "100%" }}>
                     <Text>
-                        <strong>Da:</strong> {selected?.fromEmail}
+                        <strong>Da:</strong> {selectedLog?.fromEmail}
                     </Text>
                     <Text>
-                        <strong>A:</strong> {selected?.toEmail}
+                        <strong>A:</strong> {selectedLog?.toEmail}
                     </Text>
                     <Text>
-                        <strong>Tipo:</strong> {selected?.type}
+                        <strong>Tipo:</strong> {selectedLog?.type}
                     </Text>
                     <Text>
-                        <strong>Stato:</strong> {selected?.status}
+                        <strong>Stato:</strong> {selectedLog?.status}
                     </Text>
-                    {selected?.errorMessage && (
+
+                    {selectedLog?.errorMessage && (
                         <Text type="danger">
-                            <strong>Errore:</strong> {selected.errorMessage}
+                            <strong>Errore:</strong> {selectedLog.errorMessage}
                         </Text>
                     )}
+
                     <div>{modalBody}</div>
                 </Space>
             </Modal>

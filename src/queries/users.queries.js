@@ -1,28 +1,42 @@
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { api } from "../api/apiClient.js";
 
-function toUiUser(card) {
+function getStoredUserId() {
+    try {
+        return JSON.parse(localStorage.getItem("user"))?.id ?? null;
+    } catch {
+        return null;
+    }
+}
+
+function mapUserCardToUi(dto) {
     return {
-        id: String(card.id),
-        name: card.name,
-        surname: card.surname,
-        username: card.username,
-        role: card.role,
-        faculty: card.faculty,
-        following: card.following,
+        id: String(dto.id),
+        name: dto.name,
+        surname: dto.surname,
+        username: dto.username,
+        role: dto.role,
+        faculty: dto.faculty,
+        following: dto.following,
     };
 }
 
 async function fetchUsersPage({ pageParam = 0, size = 12, q }) {
-    const me = JSON.parse(localStorage.getItem("user")); // {id, username, role}
-    const params = { currentUserId: me?.id, page: pageParam, size };
+    const currentUserId = getStoredUserId();
+
+    const params = {
+        currentUserId,
+        page: pageParam,
+        size,
+    };
+
     if (q && q.trim()) params.q = q.trim();
 
     const res = await api.get("/users", { params });
-    const data = res.data; // Spring Page<UserCardDTO>
+    const page = res.data;
 
-    const items = (data?.content || []).map(toUiUser);
-    const nextPage = data?.last ? undefined : (data?.number ?? 0) + 1;
+    const items = Array.isArray(page?.content) ? page.content.map(mapUserCardToUi) : [];
+    const nextPage = page?.last ? undefined : (page?.number ?? 0) + 1;
 
     return { items, nextPage };
 }
@@ -31,7 +45,7 @@ export function useInfiniteUsers(filters = {}) {
     return useInfiniteQuery({
         queryKey: ["users", filters],
         queryFn: ({ pageParam = 0 }) => fetchUsersPage({ pageParam, ...filters }),
-        getNextPageParam: (last) => last.nextPage,
+        getNextPageParam: (lastPage) => lastPage.nextPage,
     });
 }
 
@@ -41,10 +55,11 @@ export async function fetchUserProfile(userId, viewerId) {
 }
 
 export function useUserProfile(userId) {
-    const me = JSON.parse(localStorage.getItem("user")); // { id, username, role }
+    const viewerId = getStoredUserId();
+
     return useQuery({
-        queryKey: ["user-profile", userId, me?.id],
-        queryFn: () => fetchUserProfile(userId, me?.id),
-        enabled: !!userId,
+        queryKey: ["user-profile", userId, viewerId],
+        queryFn: () => fetchUserProfile(userId, viewerId),
+        enabled: Boolean(userId),
     });
 }

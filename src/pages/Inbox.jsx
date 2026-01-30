@@ -1,6 +1,6 @@
-import React, { useMemo } from "react";
-import { Table, Button, Space, Tag, Typography, message, Card } from "antd";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMemo } from "react";
+import { Button, Card, Table, Tag, Typography, message } from "antd";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "../api/apiClient.js";
 import useAuth from "../hooks/useAuth.js";
 
@@ -19,25 +19,23 @@ export default function Inbox() {
 
     const userId = user?.id;
 
-    // 🔹 query solo se userId è valido
     const { data: messages = [], isLoading, error } = useQuery({
         queryKey: ["receivedMessages", userId],
+        enabled: !!userId,
         queryFn: async () => {
             const res = await api.get(`/messages/received/${userId}`);
             return res.data;
         },
-        enabled: !!userId,
     });
 
-    // 🔹 mutation per segnare come letto
-    const markAsRead = useMutation({
+    const markAsReadMutation = useMutation({
         mutationFn: async (messageId) => {
             const res = await api.post(`/messages/read/${messageId}`);
             return res.data;
         },
         onSuccess: () => {
             messageApi.success("Messaggio segnato come letto");
-            queryClient.invalidateQueries(["receivedMessages", userId]);
+            queryClient.invalidateQueries({ queryKey: ["receivedMessages", userId] });
         },
         onError: (err) => {
             messageApi.error(err.response?.data || "Errore aggiornamento stato");
@@ -69,13 +67,13 @@ export default function Inbox() {
             },
             {
                 title: "Azione",
-                dataIndex: "action",
                 render: (_, record) =>
                     record.status !== "READ" ? (
                         <Button
                             size="small"
                             type="primary"
-                            onClick={() => markAsRead.mutate(record.id)}
+                            onClick={() => markAsReadMutation.mutate(record.id)}
+                            loading={markAsReadMutation.isPending}
                         >
                             Segna come letto
                         </Button>
@@ -83,12 +81,17 @@ export default function Inbox() {
                 width: 150,
             },
         ],
-        [markAsRead]
+        [markAsReadMutation]
     );
+
+    const emptyText = error
+        ? `Errore: ${error.message || "Problema nel caricamento"}`
+        : "Nessun messaggio";
 
     return (
         <div style={{ padding: 24 }}>
             {contextHolder}
+
             <Card title="Inbox" style={{ marginBottom: 16, borderRadius: 16 }}>
                 <Table
                     rowKey="id"
@@ -96,11 +99,7 @@ export default function Inbox() {
                     columns={columns}
                     dataSource={messages}
                     pagination={{ pageSize: 10 }}
-                    locale={{
-                        emptyText: error
-                            ? `Errore: ${error.message || "Problema nel caricamento"}`
-                            : "Nessun messaggio",
-                    }}
+                    locale={{ emptyText }}
                 />
             </Card>
         </div>

@@ -1,17 +1,21 @@
-import React, { useState } from "react";
-import { Row, Col, Input, List, Button, Card, Empty, Skeleton } from "antd";
+import { useState } from "react";
+import { Button, Card, Col, Empty, Input, List, Row, Skeleton } from "antd";
 import { useNavigate } from "react-router-dom";
 import { useInfiniteUsers } from "../queries/users.queries";
 import UserCard from "../components/user/UserCard";
 
 export default function People() {
-    const [q, setQ] = useState("");
+    const [query, setQuery] = useState("");
     const navigate = useNavigate();
 
-    const { data, status, fetchNextPage, hasNextPage, isFetchingNextPage } =
-        useInfiniteUsers({ q });
+    const { data, status, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteUsers({
+        q: query,
+    });
 
-    const items = data?.pages?.flatMap((p) => p.items) ?? [];
+    const users = data?.pages?.flatMap((page) => page.items) ?? [];
+
+    const isPending = status === "pending";
+    const isSuccess = status === "success";
 
     return (
         <div style={{ padding: 24 }}>
@@ -21,39 +25,38 @@ export default function People() {
                         placeholder="Cerca per nome, cognome o username…"
                         allowClear
                         enterButton="Cerca"
-                        onSearch={setQ}
+                        onSearch={setQuery}
                     />
                 </Col>
             </Row>
 
-            {status === "pending" && (
+            {isPending && (
                 <Card>
                     <Skeleton active />
                 </Card>
             )}
 
-            {status === "success" && items.length === 0 && (
+            {isSuccess && users.length === 0 && (
                 <Card>
                     <Empty description="Nessun utente trovato" />
                 </Card>
             )}
 
-            {status === "success" && items.length > 0 && (
+            {isSuccess && users.length > 0 && (
                 <List
                     grid={{ gutter: 16, xs: 1, sm: 2, md: 3, lg: 4 }}
-                    dataSource={items}
-                    renderItem={(u) => (
-                        <List.Item key={u.id}>
-                            <UserCard u={u} onOpen={(id) => navigate(`/users/${id}`)} />
+                    dataSource={users}
+                    renderItem={(user) => (
+                        <List.Item key={user.id}>
+                            <UserCard u={user} onOpen={(id) => navigate(`/users/${id}`)} />
                         </List.Item>
                     )}
                 />
-
             )}
 
             {hasNextPage && (
                 <div style={{ textAlign: "center", marginTop: 12 }}>
-                    <Button onClick={() => fetchNextPage()} loading={isFetchingNextPage}>
+                    <Button onClick={fetchNextPage} loading={isFetchingNextPage}>
                         {isFetchingNextPage ? "Carico..." : "Carica altri"}
                     </Button>
                 </div>

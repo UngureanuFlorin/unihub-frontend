@@ -1,116 +1,109 @@
-import React, { useState } from "react";
-import {
-    Card,
-    List,
-    Button,
-    Input,
-    Typography,
-    Space,
-    Modal,
-} from "antd";
-import {
-    useUniversitaList,
-    useDipartimenti,
-} from "../queries/universita.queries.js";
-import {
-    useAddDipartimento,
-    useDeleteDipartimento,
-} from "../queries/dipartimenti.mutations.js";
+import { useState } from "react";
+import { Button, Card, Input, List, Modal, Space, Typography } from "antd";
+import { HomeOutlined } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeftOutlined, HomeOutlined } from "@ant-design/icons";
+import { useDipartimenti, useUniversitaList } from "../queries/universita.queries.js";
+import { useAddDipartimento, useDeleteDipartimento } from "../queries/dipartimenti.mutations.js";
 
 const { Title } = Typography;
 
 export default function UniversitaList() {
-    const [selectedUni, setSelectedUni] = useState(null);
-    const [newDeptName, setNewDeptName] = useState("");
-    const [confirmDelete, setConfirmDelete] = useState(null);
-
     const navigate = useNavigate();
 
-    const { data: universita, isLoading: loadingUni } = useUniversitaList();
-    const { data: dipartimenti, isLoading: loadingDeps } = useDipartimenti(selectedUni?.id);
+    const [selectedUniversity, setSelectedUniversity] = useState(null);
+    const [newDepartmentName, setNewDepartmentName] = useState("");
+    const [departmentToDeleteId, setDepartmentToDeleteId] = useState(null);
 
-    const addMutation = useAddDipartimento(selectedUni?.id);
-    const deleteMutation = useDeleteDipartimento(selectedUni?.id);
+    const { data: universities, isLoading: isUniversitiesLoading } = useUniversitaList();
+    const { data: departments, isLoading: isDepartmentsLoading } = useDipartimenti(
+        selectedUniversity?.id
+    );
+
+    const addDepartmentMutation = useAddDipartimento(selectedUniversity?.id);
+    const deleteDepartmentMutation = useDeleteDipartimento(selectedUniversity?.id);
+
+    const handleAddDepartment = () => {
+        addDepartmentMutation.mutate({ nome: newDepartmentName });
+        setNewDepartmentName("");
+    };
+
+    const handleConfirmDelete = () => {
+        deleteDepartmentMutation.mutate(departmentToDeleteId);
+        setDepartmentToDeleteId(null);
+    };
 
     return (
         <div style={{ padding: 24 }}>
             <Space style={{ marginBottom: 16 }}>
-                <Button
-                    icon={<HomeOutlined />}
-                    onClick={() => navigate("/home")}
-                    type="default"
-                >
+                <Button icon={<HomeOutlined />} onClick={() => navigate("/home")} type="default">
                     Torna alla Home
                 </Button>
             </Space>
 
             <Title level={2}>Università</Title>
 
-            {/* Lista Università */}
             <List
                 bordered
-                loading={loadingUni}
-                dataSource={universita || []}
-                renderItem={(u) => (
-                    <List.Item
-                        style={{
-                            cursor: "pointer",
-                            background:
-                                selectedUni?.id === u.id ? "rgba(22,119,255,0.1)" : "white",
-                        }}
-                        onClick={() => setSelectedUni(u)}
-                    >
-                        <List.Item.Meta title={u.nome} />
-                    </List.Item>
-                )}
+                loading={isUniversitiesLoading}
+                dataSource={universities || []}
+                renderItem={(university) => {
+                    const isSelected = selectedUniversity?.id === university.id;
+
+                    return (
+                        <List.Item
+                            style={{
+                                cursor: "pointer",
+                                background: isSelected ? "rgba(22,119,255,0.1)" : "white",
+                            }}
+                            onClick={() => setSelectedUniversity(university)}
+                        >
+                            <List.Item.Meta title={university.nome} />
+                        </List.Item>
+                    );
+                }}
             />
 
-            {/* Selezione Università */}
-            {selectedUni && (
+            {selectedUniversity && (
                 <Card
-                    title={`Dipartimenti di ${selectedUni.nome}`}
+                    title={`Dipartimenti di ${selectedUniversity.nome}`}
                     style={{ marginTop: 24 }}
-                    loading={loadingDeps}
+                    loading={isDepartmentsLoading}
                 >
-                    {/* Lista dipartimenti */}
                     <List
-                        dataSource={dipartimenti || []}
-                        renderItem={(d) => (
+                        dataSource={departments || []}
+                        renderItem={(department) => (
                             <List.Item
                                 actions={[
                                     <Button
+                                        key="delete"
                                         danger
-                                        onClick={() => setConfirmDelete(d.id)}
-                                        loading={deleteMutation.isPending}
+                                        onClick={() => setDepartmentToDeleteId(department.id)}
+                                        loading={deleteDepartmentMutation.isPending}
                                     >
                                         Elimina
                                     </Button>,
                                 ]}
                             >
-                                <List.Item.Meta title={d.nome} />
+                                <List.Item.Meta title={department.nome} />
                             </List.Item>
                         )}
                     />
 
-                    {/* Form nuovo dipartimento */}
                     <div style={{ marginTop: 24 }}>
                         <Title level={4}>Aggiungi Dipartimento</Title>
+
                         <Space direction="vertical" style={{ width: "100%" }}>
                             <Input
                                 placeholder="Nome dipartimento"
-                                value={newDeptName}
-                                onChange={(e) => setNewDeptName(e.target.value)}
+                                value={newDepartmentName}
+                                onChange={(e) => setNewDepartmentName(e.target.value)}
                             />
+
                             <Button
                                 type="primary"
-                                onClick={() => {
-                                    addMutation.mutate({ nome: newDeptName });
-                                    setNewDeptName("");
-                                }}
-                                disabled={!newDeptName}
-                                loading={addMutation.isPending}
+                                onClick={handleAddDepartment}
+                                disabled={!newDepartmentName}
+                                loading={addDepartmentMutation.isPending}
                             >
                                 Aggiungi
                             </Button>
@@ -119,17 +112,13 @@ export default function UniversitaList() {
                 </Card>
             )}
 
-            {/* Modale conferma eliminazione */}
             <Modal
-                open={!!confirmDelete}
+                open={Boolean(departmentToDeleteId)}
                 title="Conferma eliminazione"
                 okText="Elimina"
                 okType="danger"
-                onOk={() => {
-                    deleteMutation.mutate(confirmDelete);
-                    setConfirmDelete(null);
-                }}
-                onCancel={() => setConfirmDelete(null)}
+                onOk={handleConfirmDelete}
+                onCancel={() => setDepartmentToDeleteId(null)}
             >
                 Sei sicuro di voler eliminare questo dipartimento?
             </Modal>

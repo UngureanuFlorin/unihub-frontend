@@ -1,27 +1,28 @@
 import { useQuery } from "@tanstack/react-query";
 import { api } from "../api/apiClient.js";
 
-export function useCommentsByEvento(eventoId) {
-    return useQuery({
-        queryKey: ["comments", eventoId],
-        queryFn: async () => {
-            const { data } = await api.get(`/commenti/evento/${eventoId}`);
-            return data;
-        },
-        enabled: !!eventoId,
-    });
+async function fetchCommentsByEvent(eventId) {
+    const { data } = await api.get(`/commenti/evento/${eventId}`);
+    return data;
 }
 
 async function fetchCommentsByAuthor(authorId) {
-    const res = await api.get(`/commenti/autore/${authorId}`);
-    return res.data;
+    const { data } = await api.get(`/commenti/autore/${authorId}`);
+    return data;
 }
 
-// 🔹 Hook React Query
+export function useCommentsByEvento(eventoId) {
+    return useQuery({
+        queryKey: ["comments", eventoId],
+        queryFn: () => fetchCommentsByEvent(eventoId),
+        enabled: Boolean(eventoId),
+    });
+}
+
 export function useCommentsByAuthor(authorId) {
     return useQuery({
         queryKey: ["comments-by-author", authorId],
         queryFn: () => fetchCommentsByAuthor(authorId),
-        enabled: !!authorId,
+        enabled: Boolean(authorId),
     });
 }

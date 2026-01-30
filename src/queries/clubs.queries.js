@@ -1,58 +1,56 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { api } from "../api/apiClient.js";
 import dayjs from "dayjs";
 import "dayjs/locale/it";
+import { api } from "../api/apiClient.js";
 
 dayjs.locale("it");
 
-// Helpers
-const fmt = (iso) =>
-    iso ? dayjs(iso).format("DD MMM YYYY, HH:mm") : undefined;
+const formatDateTime = (iso) => (iso ? dayjs(iso).format("DD MMM YYYY, HH:mm") : undefined);
 
-// Mapping DTO → UI
-const toUiClub = (c) => ({
-    id: String(c.id),
-    name: c.nome,
-    description: c.descrizione,
+const mapClubToUi = (club) => ({
+    id: String(club.id),
+    name: club.nome,
+    description: club.descrizione,
 });
 
-const toUiClubDetail = (d) => ({
-    id: String(d.id),
-    name: d.nome,
-    description: d.descrizione,
-    founder: d.fondatoreUsername,
-    seatsLeft: d.postiDisponibili,
-    createdAt: d.dataCreazione,
-    createdAtPretty: fmt(d.dataCreazione),
-    members: Array.isArray(d.membri)
-        ? d.membri.map((m) => ({ id: String(m.id), username: m.username }))
+const mapClubDetailToUi = (detail) => ({
+    id: String(detail.id),
+    name: detail.nome,
+    description: detail.descrizione,
+    founder: detail.fondatoreUsername,
+    seatsLeft: detail.postiDisponibili,
+    createdAt: detail.dataCreazione,
+    createdAtPretty: formatDateTime(detail.dataCreazione),
+    members: Array.isArray(detail.membri)
+        ? detail.membri.map((member) => ({
+            id: String(member.id),
+            username: member.username,
+        }))
         : [],
 });
 
-// API calls
-async function fetchClubs() {
+async function getClubs() {
     const res = await api.get("/club/getAllClubs");
-    return Array.isArray(res.data) ? res.data.map(toUiClub) : [];
+    return Array.isArray(res.data) ? res.data.map(mapClubToUi) : [];
 }
 
-async function fetchClub(id) {
+async function getClub(id) {
     const res = await api.get(`/club/${id}`);
-    return toUiClubDetail(res.data);
+    return mapClubDetailToUi(res.data);
 }
 
-// React Query hooks
 export function useClubs() {
     return useQuery({
         queryKey: ["clubs"],
-        queryFn: fetchClubs,
+        queryFn: getClubs,
     });
 }
 
 export function useClub(id) {
     return useQuery({
         queryKey: ["club", id],
-        queryFn: () => fetchClub(id),
-        enabled: !!id,
+        queryFn: () => getClub(id),
+        enabled: Boolean(id),
     });
 }
 

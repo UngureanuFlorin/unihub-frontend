@@ -1,43 +1,43 @@
-import React, { useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useState } from "react";
+import { Link, useParams } from "react-router-dom";
 import { useEvent } from "../queries/events.queries";
 import { useIscriviEvento, useDisiscriviEvento } from "../queries/events.mutations";
 import { useCommentsByEvento } from "../queries/comments.queries";
 import { useCreateComment, useDeleteComment } from "../queries/comments.mutations";
 import { useCreateReport } from "../queries/reports.mutations.js";
 import {
-    Card,
-    Avatar,
-    Typography,
-    Space,
-    Tag,
-    Skeleton,
     Alert,
-    Divider,
+    Avatar,
     Button,
-    Progress,
-    Tooltip,
-    message,
+    Card,
+    Divider,
+    Form,
     Input,
     List,
-    Popconfirm,
     Modal,
-    Form,
+    Popconfirm,
+    Progress,
     Select,
+    Skeleton,
+    Space,
+    Tag,
+    Tooltip,
+    Typography,
+    message,
 } from "antd";
 import {
     ArrowLeftOutlined,
     CalendarOutlined,
-    EnvironmentOutlined,
-    UserOutlined,
-    ClockCircleOutlined,
-    TeamOutlined,
-    HourglassOutlined,
     CheckCircleOutlined,
+    ClockCircleOutlined,
     CloseCircleOutlined,
-    SendOutlined,
     DeleteOutlined,
+    EnvironmentOutlined,
     FlagOutlined,
+    HourglassOutlined,
+    SendOutlined,
+    TeamOutlined,
+    UserOutlined,
 } from "@ant-design/icons";
 import dayjs from "dayjs";
 import { getErrorMessage } from "../utils/error.js";
@@ -45,28 +45,56 @@ import { getErrorMessage } from "../utils/error.js";
 const { Title, Paragraph, Text } = Typography;
 const { TextArea } = Input;
 
+function escapeIcs(value) {
+    return String(value || "")
+        .replace(/\\/g, "\\\\")
+        .replace(/;/g, "\\;")
+        .replace(/,/g, "\\,")
+        .replace(/\n/g, "\\n");
+}
+
+function toIcsDate(value) {
+    if (!value) return "";
+
+    const normalized =
+        typeof value === "string" && value.includes(" ") ? `${value.replace(" ", "T")}:00` : value;
+
+    const date = new Date(normalized);
+    if (Number.isNaN(date.getTime())) return "";
+
+    const pad = (n) => String(n).padStart(2, "0");
+
+    return `${date.getUTCFullYear()}${pad(date.getUTCMonth() + 1)}${pad(date.getUTCDate())}T${pad(
+        date.getUTCHours()
+    )}${pad(date.getUTCMinutes())}${pad(date.getUTCSeconds())}Z`;
+}
+
 export default function EventDetail() {
     const { id } = useParams();
-    const { data: ev, status, error, refetch } = useEvent(id);
-    const iscriviMutation = useIscriviEvento();
-    const disiscriviMutation = useDisiscriviEvento();
-    const createReport = useCreateReport();
 
-    // 🗨️ Commenti
-    const { data: comments = [], refetch: refetchComments, isLoading: loadingComments } =
+    const { data: event, status, error, refetch } = useEvent(id);
+
+    const enrollMutation = useIscriviEvento();
+    const unenrollMutation = useDisiscriviEvento();
+
+    const { data: comments = [], refetch: refetchComments, isLoading: isCommentsLoading } =
         useCommentsByEvento(id);
-    const createComment = useCreateComment();
-    const deleteComment = useDeleteComment();
 
-    const [newComment, setNewComment] = useState("");
+    const createCommentMutation = useCreateComment();
+    const deleteCommentMutation = useDeleteComment();
+    const createReportMutation = useCreateReport();
+
+    const [commentText, setCommentText] = useState("");
     const [messageApi, contextHolder] = message.useMessage();
+
     const user = JSON.parse(localStorage.getItem("user"));
-    const [reportOpen, setReportOpen] = useState(false);
+    const [isReportModalOpen, setIsReportModalOpen] = useState(false);
     const [reportTarget, setReportTarget] = useState(null);
     const [reportForm] = Form.useForm();
 
     if (status === "pending") return <Skeleton active paragraph={{ rows: 6 }} />;
-    if (status === "error")
+
+    if (status === "error") {
         return (
             <Alert
                 type="error"
@@ -74,79 +102,80 @@ export default function EventDetail() {
                 description={String(error)}
             />
         );
-    if (!ev) return null;
-
-    const now = dayjs();
-    const deadline = ev.deadlinePretty ? dayjs(ev.deadlinePretty) : null;
-
-    let stato = "Non disponibile";
-    let tagColor = "default";
-    if (deadline && now.isBefore(deadline)) {
-        if (ev.slotsLeft > 0) {
-            stato = "Iscrizioni aperte";
-            tagColor = "green";
-        } else {
-            stato = "Posti esauriti";
-            tagColor = "orange";
-        }
-    } else if (deadline && now.isAfter(deadline)) {
-        stato = "Iscrizioni chiuse";
-        tagColor = "red";
     }
 
-    const percent = ev.slotsTotal
-        ? ((ev.slotsTotal - ev.slotsLeft) / ev.slotsTotal) * 100
+    if (!event) return null;
+
+    const now = dayjs();
+    const deadline = event.deadlinePretty ? dayjs(event.deadlinePretty) : null;
+
+    let subscriptionStatusText = "Non disponibile";
+    let subscriptionStatusColor = "default";
+
+    if (deadline && now.isBefore(deadline)) {
+        if (event.slotsLeft > 0) {
+            subscriptionStatusText = "Iscrizioni aperte";
+            subscriptionStatusColor = "green";
+        } else {
+            subscriptionStatusText = "Posti esauriti";
+            subscriptionStatusColor = "orange";
+        }
+    } else if (deadline && now.isAfter(deadline)) {
+        subscriptionStatusText = "Iscrizioni chiuse";
+        subscriptionStatusColor = "red";
+    }
+
+    const filledPercent = event.slotsTotal
+        ? ((event.slotsTotal - event.slotsLeft) / event.slotsTotal) * 100
         : 0;
 
-    // ➕ invio nuovo commento
-    const handleAddComment = async () => {
-        if (!user) {
-            messageApi.error("Devi essere loggato per commentare!");
-            return;
-        }
+    const requireAuth = (text) => {
+        if (user) return true;
+        messageApi.error(text);
+        return false;
+    };
 
-        if (!newComment.trim()) {
+    const handleAddComment = async () => {
+        if (!requireAuth("Devi essere loggato per commentare!")) return;
+
+        if (!commentText.trim()) {
             messageApi.warning("Scrivi qualcosa prima di inviare.");
             return;
         }
 
         try {
-            await createComment.mutateAsync({
-                testo: newComment,
-                eventoId: ev.id,
+            await createCommentMutation.mutateAsync({
+                testo: commentText,
+                eventoId: event.id,
                 autore: { id: user.id },
             });
-            setNewComment("");
+
+            setCommentText("");
             messageApi.success("Commento aggiunto!");
             refetchComments();
-            // eslint-disable-next-line no-unused-vars
-        } catch (err) {
+        } catch {
             messageApi.error("Errore durante l'invio del commento");
         }
     };
 
-    // 🗑️ elimina commento
     const handleDeleteComment = async (commentId) => {
         try {
-            await deleteComment.mutateAsync({ commentId, eventoId: ev.id });
+            await deleteCommentMutation.mutateAsync({ commentId, eventoId: event.id });
             messageApi.success("Commento eliminato!");
         } catch {
             messageApi.error("Errore durante l'eliminazione del commento");
         }
     };
 
-    // ISCRIZIONE / DISISCRIZIONE
-    const handleIscrizione = async () => {
-        if (!user) {
-            messageApi.error("Devi essere loggato per iscriverti!");
-            return;
-        }
+    const handleEnroll = async () => {
+        if (!requireAuth("Devi essere loggato per iscriverti!")) return;
 
         try {
-            await iscriviMutation.mutateAsync({
-                eventoId: ev.id,
+            await enrollMutation.mutateAsync({
+                eventoId: event.id,
                 studenteId: user.id,
             });
+
             messageApi.success("Ti sei iscritto all'evento!");
             refetch();
         } catch (err) {
@@ -154,17 +183,15 @@ export default function EventDetail() {
         }
     };
 
-    const handleDisiscrizione = async () => {
-        if (!user) {
-            messageApi.error("Devi essere loggato per disiscriverti!");
-            return;
-        }
+    const handleUnenroll = async () => {
+        if (!requireAuth("Devi essere loggato per disiscriverti!")) return;
 
         try {
-            await disiscriviMutation.mutateAsync({
-                eventoId: ev.id,
+            await unenrollMutation.mutateAsync({
+                eventoId: event.id,
                 studenteId: user.id,
             });
+
             messageApi.success("Ti sei disiscritto dall'evento");
             refetch();
         } catch (err) {
@@ -172,62 +199,44 @@ export default function EventDetail() {
         }
     };
 
-    const openReport = (targetType, targetId) => {
-        if (!user) {
-            messageApi.error("Devi essere loggato per segnalare");
-            return;
-        }
+    const openReportModal = (targetType, targetId) => {
+        if (!requireAuth("Devi essere loggato per segnalare")) return;
+
         setReportTarget({ targetType, targetId });
         reportForm.resetFields();
-        setReportOpen(true);
+        setIsReportModalOpen(true);
     };
 
     const handleSubmitReport = async () => {
         if (!reportTarget) return;
+
         try {
             const values = await reportForm.validateFields();
-            await createReport.mutateAsync({
+
+            await createReportMutation.mutateAsync({
                 targetType: reportTarget.targetType,
                 targetId: reportTarget.targetId,
                 reporterId: user.id,
                 reason: values.reason,
                 details: values.details,
             });
+
             messageApi.success("Segnalazione inviata");
-            setReportOpen(false);
+            setIsReportModalOpen(false);
         } catch (err) {
             if (err?.errorFields) return;
             messageApi.error(getErrorMessage(err, "Errore invio segnalazione"));
         }
     };
 
-    const escapeIcs = (value) =>
-        String(value || "")
-            .replace(/\\/g, "\\\\")
-            .replace(/;/g, "\\;")
-            .replace(/,/g, "\\,")
-            .replace(/\n/g, "\\n");
-
-    const toIcsDate = (value) => {
-        if (!value) return "";
-        const normalized = typeof value === "string" && value.includes(" ")
-            ? `${value.replace(" ", "T")}:00`
-            : value;
-        const date = new Date(normalized);
-        if (Number.isNaN(date.getTime())) return "";
-        const pad = (n) => String(n).padStart(2, "0");
-        return `${date.getUTCFullYear()}${pad(date.getUTCMonth() + 1)}${pad(date.getUTCDate())}T${pad(
-            date.getUTCHours()
-        )}${pad(date.getUTCMinutes())}${pad(date.getUTCSeconds())}Z`;
-    };
-
     const handleExportCalendar = () => {
-        const start = toIcsDate(ev.date);
-        const endRaw = ev.endDate || null;
+        const start = toIcsDate(event.date);
+        const endRaw = event.endDate || null;
+
         const end = endRaw
             ? toIcsDate(endRaw)
             : start
-                ? toIcsDate(dayjs(ev.date.replace(" ", "T")).add(1, "hour").toDate())
+                ? toIcsDate(dayjs(event.date.replace(" ", "T")).add(1, "hour").toDate())
                 : "";
 
         if (!start) {
@@ -240,13 +249,13 @@ export default function EventDetail() {
             "VERSION:2.0",
             "PRODID:-//UniHub//IT",
             "BEGIN:VEVENT",
-            `UID:${ev.id}@unihub`,
+            `UID:${event.id}@unihub`,
             `DTSTAMP:${toIcsDate(new Date())}`,
             `DTSTART:${start}`,
             end ? `DTEND:${end}` : null,
-            `SUMMARY:${escapeIcs(ev.title)}`,
-            `DESCRIPTION:${escapeIcs(ev.description || ev.summary)}`,
-            ev.place ? `LOCATION:${escapeIcs(ev.place)}` : null,
+            `SUMMARY:${escapeIcs(event.title)}`,
+            `DESCRIPTION:${escapeIcs(event.description || event.summary)}`,
+            event.place ? `LOCATION:${escapeIcs(event.place)}` : null,
             "END:VEVENT",
             "END:VCALENDAR",
         ]
@@ -255,14 +264,19 @@ export default function EventDetail() {
 
         const blob = new Blob([ics], { type: "text/calendar;charset=utf-8" });
         const url = URL.createObjectURL(blob);
+
         const link = document.createElement("a");
         link.href = url;
-        link.download = `evento-${ev.id}.ics`;
+        link.download = `evento-${event.id}.ics`;
+
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
+
         URL.revokeObjectURL(url);
     };
+
+    const canEnroll = subscriptionStatusText === "Iscrizioni aperte";
 
     return (
         <div style={{ padding: 24 }}>
@@ -281,92 +295,101 @@ export default function EventDetail() {
                     marginTop: 12,
                 }}
             >
-                {/* Titolo e stato */}
                 <Space align="center" style={{ justifyContent: "space-between", width: "100%" }}>
                     <Title level={2} style={{ marginBottom: 8 }}>
-                        {ev.title}
+                        {event.title}
                     </Title>
-                    <Tag color={tagColor} style={{ fontWeight: 600 }}>
-                        {stato}
+
+                    <Tag color={subscriptionStatusColor} style={{ fontWeight: 600 }}>
+                        {subscriptionStatusText}
                     </Tag>
                 </Space>
 
-                {/* Info evento */}
                 <Space wrap size="middle" style={{ marginBottom: 16 }}>
-                    {ev.datePretty && (
+                    {event.datePretty && (
                         <Tooltip title="Data inizio evento">
                             <Text>
-                                <CalendarOutlined /> {ev.datePretty}
+                                <CalendarOutlined /> {event.datePretty}
                             </Text>
                         </Tooltip>
                     )}
-                    {ev.endDatePretty && (
+
+                    {event.endDatePretty && (
                         <Tooltip title="Data fine evento">
                             <Text>
-                                <ClockCircleOutlined /> {ev.endDatePretty}
+                                <ClockCircleOutlined /> {event.endDatePretty}
                             </Text>
                         </Tooltip>
                     )}
-                    {ev.place && (
+
+                    {event.place && (
                         <Text>
-                            <EnvironmentOutlined /> {ev.place}
+                            <EnvironmentOutlined /> {event.place}
                         </Text>
                     )}
-                    {ev.organizer && (
+
+                    {event.organizer && (
                         <Text>
-                            <UserOutlined /> Organizzato da <b>@{ev.organizer}</b>
+                            <UserOutlined /> Organizzato da <b>@{event.organizer}</b>
                         </Text>
                     )}
+
                     <Button icon={<CalendarOutlined />} onClick={handleExportCalendar}>
                         Esporta .ics
                     </Button>
-                    <Button icon={<FlagOutlined />} onClick={() => openReport("EVENT", ev.id)}>
+
+                    <Button icon={<FlagOutlined />} onClick={() => openReportModal("EVENT", event.id)}>
                         Segnala evento
                     </Button>
                 </Space>
 
                 <Paragraph style={{ fontSize: 16, marginBottom: 16 }}>
-                    {ev.description || ev.summary}
+                    {event.description || event.summary}
                 </Paragraph>
 
-                {ev.deadlinePretty && (
+                {event.deadlinePretty && (
                     <Text type="secondary" style={{ display: "block", marginBottom: 8 }}>
-                        <HourglassOutlined /> Iscrizioni entro: <b>{ev.deadlinePretty}</b>
+                        <HourglassOutlined /> Iscrizioni entro: <b>{event.deadlinePretty}</b>
                     </Text>
                 )}
 
-                {ev.slotsTotal && (
+                {event.slotsTotal && (
                     <>
                         <Divider />
                         <Space align="center" size="large">
-                            <Tooltip title={`Posti disponibili: ${ev.slotsLeft}/${ev.slotsTotal}`}>
+                            <Tooltip title={`Posti disponibili: ${event.slotsLeft}/${event.slotsTotal}`}>
                                 <div>
                                     <Text strong>
-                                        <TeamOutlined /> Posti totali: {ev.slotsTotal}
+                                        <TeamOutlined /> Posti totali: {event.slotsTotal}
                                     </Text>
+
                                     <Progress
-                                        percent={Math.round(percent)}
+                                        percent={Math.round(filledPercent)}
                                         showInfo={false}
                                         strokeColor="#3a47d5"
                                         style={{ width: 200, marginLeft: 10 }}
                                     />
-                                    <Text type="secondary">
-                                        {ev.slotsLeft} posti rimasti
-                                    </Text>
+
+                                    <Text type="secondary">{event.slotsLeft} posti rimasti</Text>
                                 </div>
                             </Tooltip>
                         </Space>
                     </>
                 )}
 
-                {ev.attendees?.length > 0 && (
+                {event.attendees?.length > 0 && (
                     <>
                         <Divider />
                         <Title level={4}>Partecipanti</Title>
+
                         <Space wrap size="small">
-                            {ev.attendees.map((u) => (
-                                <Tooltip key={u.id} title={`@${u.username}`}>
-                                    <Avatar size={32} src={u.profileImage || null} icon={<UserOutlined />} />
+                            {event.attendees.map((attendee) => (
+                                <Tooltip key={attendee.id} title={`@${attendee.username}`}>
+                                    <Avatar
+                                        size={32}
+                                        src={attendee.profileImage || null}
+                                        icon={<UserOutlined />}
+                                    />
                                 </Tooltip>
                             ))}
                         </Space>
@@ -374,14 +397,15 @@ export default function EventDetail() {
                 )}
 
                 <Divider />
+
                 <div style={{ textAlign: "center", marginBottom: 16 }}>
-                    {ev.userIscritto ? (
+                    {event.userIscritto ? (
                         <Button
                             danger
                             size="large"
                             icon={<CloseCircleOutlined />}
-                            loading={disiscriviMutation.isPending}
-                            onClick={handleDisiscrizione}
+                            loading={unenrollMutation.isPending}
+                            onClick={handleUnenroll}
                         >
                             Disiscriviti dall'evento
                         </Button>
@@ -390,54 +414,55 @@ export default function EventDetail() {
                             type="primary"
                             size="large"
                             icon={<CheckCircleOutlined />}
-                            disabled={stato !== "Iscrizioni aperte" || iscriviMutation.isPending}
-                            loading={iscriviMutation.isPending}
-                            onClick={handleIscrizione}
+                            disabled={!canEnroll || enrollMutation.isPending}
+                            loading={enrollMutation.isPending}
+                            onClick={handleEnroll}
                         >
                             Iscriviti all'evento
                         </Button>
                     )}
                 </div>
 
-                {/* Commenti */}
                 <Divider />
                 <Title level={4}>Commenti</Title>
 
                 <Space.Compact style={{ width: "100%", marginBottom: 12 }}>
                     <TextArea
                         rows={2}
-                        value={newComment}
-                        onChange={(e) => setNewComment(e.target.value)}
+                        value={commentText}
+                        onChange={(e) => setCommentText(e.target.value)}
                         placeholder="Scrivi un commento..."
                     />
+
                     <Button
                         type="primary"
                         icon={<SendOutlined />}
                         onClick={handleAddComment}
-                        loading={createComment.isPending}
+                        loading={createCommentMutation.isPending}
                     >
                         Invia
                     </Button>
                 </Space.Compact>
 
-                {loadingComments ? (
+                {isCommentsLoading ? (
                     <Skeleton active paragraph={{ rows: 3 }} />
                 ) : comments.length === 0 ? (
                     <Text type="secondary">Nessun commento ancora.</Text>
                 ) : (
                     <List
                         dataSource={comments}
-                        renderItem={(c) => (
+                        renderItem={(comment) => (
                             <List.Item
-                                key={c.id}
+                                key={comment.id}
                                 actions={
-                                    user && user.id === c.autore?.id
+                                    user && user.id === comment.autore?.id
                                         ? [
                                             <Popconfirm
+                                                key="delete"
                                                 title="Elimina commento?"
                                                 okText="Sì"
                                                 cancelText="No"
-                                                onConfirm={() => handleDeleteComment(c.id)}
+                                                onConfirm={() => handleDeleteComment(comment.id)}
                                             >
                                                 <Button
                                                     type="text"
@@ -451,7 +476,7 @@ export default function EventDetail() {
                                                 key="report"
                                                 type="text"
                                                 icon={<FlagOutlined />}
-                                                onClick={() => openReport("COMMENT", c.id)}
+                                                onClick={() => openReportModal("COMMENT", comment.id)}
                                             />,
                                         ]
                                 }
@@ -464,13 +489,15 @@ export default function EventDetail() {
                                             <Avatar
                                                 size={28}
                                                 icon={<UserOutlined />}
-                                                src={c.autore?.profileImage || null}
+                                                src={comment.autore?.profileImage || null}
                                             />
-                                            <Text strong>@{c.autore?.username || c.autoreUsername || "utente"}</Text>
+                                            <Text strong>
+                                                @{comment.autore?.username || comment.autoreUsername || "utente"}
+                                            </Text>
                                         </Space>
                                     }
                                 >
-                                    {c.testo}
+                                    {comment.testo}
                                 </Card>
                             </List.Item>
                         )}
@@ -480,10 +507,10 @@ export default function EventDetail() {
 
             <Modal
                 title="Segnala contenuto"
-                open={reportOpen}
-                onCancel={() => setReportOpen(false)}
+                open={isReportModalOpen}
+                onCancel={() => setIsReportModalOpen(false)}
                 okText="Invia"
-                confirmLoading={createReport.isPending}
+                confirmLoading={createReportMutation.isPending}
                 onOk={handleSubmitReport}
             >
                 <Form form={reportForm} layout="vertical">
@@ -501,6 +528,7 @@ export default function EventDetail() {
                             ]}
                         />
                     </Form.Item>
+
                     <Form.Item label="Dettagli" name="details">
                         <Input.TextArea rows={4} placeholder="Descrivi il problema..." />
                     </Form.Item>

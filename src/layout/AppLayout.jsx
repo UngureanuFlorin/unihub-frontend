@@ -1,13 +1,19 @@
-import React from "react";
 import { Layout, Menu } from "antd";
 import { Link, Outlet, useLocation } from "react-router-dom";
-import { HomeOutlined, CalendarOutlined, PlusCircleOutlined, SafetyOutlined, MailOutlined } from "@ant-design/icons";
+import {
+    HomeOutlined,
+    CalendarOutlined,
+    PlusCircleOutlined,
+    SafetyOutlined,
+    MailOutlined,
+} from "@ant-design/icons";
 
 const { Sider, Content } = Layout;
 
-function AppLayout() {
+export default function AppLayout() {
     const { pathname } = useLocation();
-    const selected = pathname.startsWith("/create/event")
+
+    const selectedKey = pathname.startsWith("/create/event")
         ? "create-event"
         : pathname.split("/")[1] || "home";
 
@@ -18,7 +24,7 @@ function AppLayout() {
                 <Menu
                     theme="dark"
                     mode="inline"
-                    selectedKeys={[selected]}
+                    selectedKeys={[selectedKey]}
                     items={[
                         { key: "home", icon: <HomeOutlined />, label: <Link to="/home">Home</Link> },
                         { key: "events", icon: <CalendarOutlined />, label: <Link to="/events">Eventi</Link> },
@@ -28,13 +34,12 @@ function AppLayout() {
                     ]}
                 />
             </Sider>
+
             <Layout>
-                <Content style={{ margin: 0 }}>
+                <Content>
                     <Outlet />
                 </Content>
             </Layout>
         </Layout>
     );
 }
-
-export default AppLayout;

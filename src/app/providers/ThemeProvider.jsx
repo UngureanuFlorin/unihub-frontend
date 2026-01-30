@@ -1,8 +1,7 @@
-import React from "react";
 import { ConfigProvider, theme as antdTheme } from "antd";
 import itIT from "antd/locale/it_IT";
 
-function ThemeProvider({ children }) {
+export default function ThemeProvider({ children }) {
     return (
         <ConfigProvider
             locale={itIT}
@@ -23,5 +22,3 @@ function ThemeProvider({ children }) {
         </ConfigProvider>
     );
 }
-
-export default ThemeProvider;

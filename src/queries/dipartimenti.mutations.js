@@ -1,35 +1,41 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { api } from "../api/apiClient.js";
 import { message } from "antd";
+import { api } from "../api/apiClient.js";
 
-export function useAddDipartimento(universitaId) {
+export function useAddDipartimento(universityId) {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: ({ nome }) =>
-            api.post(`/universita/${universitaId}/dipartimenti`, {
-                nome,
-            }),
+        mutationKey: ["addDipartimento", universityId],
+        mutationFn: async ({ nome }) => {
+            const res = await api.post(`/universita/${universityId}/dipartimenti`, { nome });
+            return res.data;
+        },
         onSuccess: () => {
             message.success("Dipartimento aggiunto con successo");
-            queryClient.invalidateQueries(["dipartimenti", universitaId]);
+            queryClient.invalidateQueries({ queryKey: ["dipartimenti", universityId] });
         },
-        onError: (err) =>
-            message.error(err?.response?.data || "Errore durante la creazione"),
+        onError: (err) => {
+            message.error(err?.response?.data || "Errore durante la creazione");
+        },
     });
 }
 
-export function useDeleteDipartimento(universitaId) {
+export function useDeleteDipartimento(universityId) {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: (dipartimentoId) =>
-            api.delete(`/universita/dipartimenti/${dipartimentoId}`),
+        mutationKey: ["deleteDipartimento", universityId],
+        mutationFn: async (departmentId) => {
+            const res = await api.delete(`/universita/dipartimenti/${departmentId}`);
+            return res.data;
+        },
         onSuccess: () => {
             message.success("Dipartimento eliminato con successo");
-            queryClient.invalidateQueries(["dipartimenti", universitaId]);
+            queryClient.invalidateQueries({ queryKey: ["dipartimenti", universityId] });
         },
-        onError: (err) =>
-            message.error(err?.response?.data || "Errore durante l’eliminazione"),
+        onError: (err) => {
+            message.error(err?.response?.data || "Errore durante l’eliminazione");
+        },
     });
 }

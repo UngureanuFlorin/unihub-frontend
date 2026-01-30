@@ -5,8 +5,8 @@ export function useDeleteCommentModeration() {
     return useMutation({
         mutationKey: ["moderation-delete-comment"],
         mutationFn: async (commentId) => {
-            const { data } = await api.delete(`/moderation/comments/${commentId}`);
-            return data;
+            const res = await api.delete(`/moderation/comments/${commentId}`);
+            return res.data;
         },
     });
 }
@@ -15,8 +15,8 @@ export function useHideEventModeration() {
     return useMutation({
         mutationKey: ["moderation-hide-event"],
         mutationFn: async (eventId) => {
-            const { data } = await api.post(`/moderation/events/${eventId}/hide`);
-            return data;
+            const res = await api.post(`/moderation/events/${eventId}/hide`);
+            return res.data;
         },
     });
 }
@@ -25,8 +25,8 @@ export function useSuspendClubModeration() {
     return useMutation({
         mutationKey: ["moderation-suspend-club"],
         mutationFn: async (clubId) => {
-            const { data } = await api.post(`/moderation/clubs/${clubId}/suspend`);
-            return data;
+            const res = await api.post(`/moderation/clubs/${clubId}/suspend`);
+            return res.data;
         },
     });
 }
@@ -35,8 +35,8 @@ export function useRestoreClubModeration() {
     return useMutation({
         mutationKey: ["moderation-restore-club"],
         mutationFn: async (clubId) => {
-            const { data } = await api.post(`/moderation/clubs/${clubId}/restore`);
-            return data;
+            const res = await api.post(`/moderation/clubs/${clubId}/restore`);
+            return res.data;
         },
     });
 }

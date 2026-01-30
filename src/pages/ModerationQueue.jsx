@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Button, Card, Popconfirm, Select, Space, Table, Tag, Typography, message } from "antd";
 import { Link } from "react-router-dom";
 import { useReports } from "../queries/reports.queries.js";
@@ -33,17 +33,55 @@ const STATUS_COLOR = {
 };
 
 export default function ModerationQueue() {
-    const [status, setStatus] = useState("NEW");
-    const [type, setType] = useState(undefined);
-    const { data: reports = [], isLoading } = useReports({ status, type });
-    const updateStatus = useUpdateReportStatus();
-    const hideEvent = useHideEventModeration();
-    const suspendClub = useSuspendClubModeration();
-    const restoreClub = useRestoreClubModeration();
+    const [statusFilter, setStatusFilter] = useState("NEW");
+    const [typeFilter, setTypeFilter] = useState(undefined);
+
+    const { data: reports = [], isLoading } = useReports({
+        status: statusFilter,
+        type: typeFilter,
+    });
+
+    const updateStatusMutation = useUpdateReportStatus();
+    const hideEventMutation = useHideEventModeration();
+    const suspendClubMutation = useSuspendClubModeration();
+    const restoreClubMutation = useRestoreClubModeration();
+
     const [messageApi, contextHolder] = message.useMessage();
 
-    const handleResolve = async (reportId) => {
-        await updateStatus.mutateAsync({ reportId, status: "RESOLVED" });
+    const resolveReport = async (reportId) => {
+        await updateStatusMutation.mutateAsync({ reportId, status: "RESOLVED" });
+    };
+
+    const updateReportStatus = async (reportId, nextStatus) => {
+        try {
+            await updateStatusMutation.mutateAsync({ reportId, status: nextStatus });
+            messageApi.success("Stato aggiornato");
+        } catch (err) {
+            messageApi.error(getErrorMessage(err, "Errore aggiornamento stato"));
+        }
+    };
+
+    const renderTarget = (record) => {
+        if (record.targetType === "EVENT") {
+            return <Link to={`/events/${record.targetId}`}>{record.targetSummary}</Link>;
+        }
+
+        if (record.targetType === "CLUB") {
+            const label = record.targetSummary;
+
+            return (
+                <Space size="small">
+                    {record.targetSuspended ? (
+                        <Text>{label}</Text>
+                    ) : (
+                        <Link to={`/clubs/${record.targetId}`}>{label}</Link>
+                    )}
+                    {record.targetSuspended && <Tag color="volcano">Sospeso</Tag>}
+                </Space>
+            );
+        }
+
+        return <Text>{record.targetSummary}</Text>;
     };
 
     const columns = useMemo(
@@ -51,37 +89,19 @@ export default function ModerationQueue() {
             {
                 title: "Tipo",
                 dataIndex: "targetType",
-                render: (value) => <Tag>{value}</Tag>,
                 width: 100,
+                render: (value) => <Tag>{value}</Tag>,
             },
             {
                 title: "Target",
                 dataIndex: "targetSummary",
-                render: (_, record) => {
-                    if (record.targetType === "EVENT") {
-                        return <Link to={`/events/${record.targetId}`}>{record.targetSummary}</Link>;
-                    }
-                    if (record.targetType === "CLUB") {
-                        const clubLabel = record.targetSummary;
-                        return (
-                            <Space size="small">
-                                {record.targetSuspended ? (
-                                    <Text>{clubLabel}</Text>
-                                ) : (
-                                    <Link to={`/clubs/${record.targetId}`}>{clubLabel}</Link>
-                                )}
-                                {record.targetSuspended && <Tag color="volcano">Sospeso</Tag>}
-                            </Space>
-                        );
-                    }
-                    return <Text>{record.targetSummary}</Text>;
-                },
+                render: (_, record) => renderTarget(record),
             },
             {
                 title: "Reporter",
                 dataIndex: "reporter",
-                render: (value) => <Text>@{value?.username}</Text>,
                 width: 160,
+                render: (value) => <Text>@{value?.username}</Text>,
             },
             {
                 title: "Motivo",
@@ -95,12 +115,11 @@ export default function ModerationQueue() {
             {
                 title: "Stato",
                 dataIndex: "status",
-                render: (value) => <Tag color={STATUS_COLOR[value]}>{value}</Tag>,
                 width: 120,
+                render: (value) => <Tag color={STATUS_COLOR[value]}>{value}</Tag>,
             },
             {
                 title: "Azione",
-                dataIndex: "action",
                 width: 260,
                 render: (_, record) => (
                     <Space>
@@ -108,19 +127,10 @@ export default function ModerationQueue() {
                             size="small"
                             value={record.status}
                             options={STATUS_OPTIONS}
-                            onChange={async (next) => {
-                                try {
-                                    await updateStatus.mutateAsync({
-                                        reportId: record.id,
-                                        status: next,
-                                    });
-                                    messageApi.success("Stato aggiornato");
-                                } catch (err) {
-                                    messageApi.error(getErrorMessage(err, "Errore aggiornamento stato"));
-                                }
-                            }}
+                            onChange={(next) => updateReportStatus(record.id, next)}
                             style={{ width: 120 }}
                         />
+
                         {record.targetType === "EVENT" && (
                             <Popconfirm
                                 title="Oscurare questo evento?"
@@ -129,8 +139,8 @@ export default function ModerationQueue() {
                                 cancelText="Annulla"
                                 onConfirm={async () => {
                                     try {
-                                        await hideEvent.mutateAsync(record.targetId);
-                                        await handleResolve(record.id);
+                                        await hideEventMutation.mutateAsync(record.targetId);
+                                        await resolveReport(record.id);
                                         messageApi.success("Evento oscurato");
                                     } catch (err) {
                                         messageApi.error(getErrorMessage(err, "Errore oscuramento evento"));
@@ -140,6 +150,7 @@ export default function ModerationQueue() {
                                 <Button size="small">Oscura</Button>
                             </Popconfirm>
                         )}
+
                         {record.targetType === "CLUB" && (
                             <Popconfirm
                                 title={record.targetSuspended ? "Ripristinare questo club?" : "Sospendere questo club?"}
@@ -153,13 +164,14 @@ export default function ModerationQueue() {
                                 onConfirm={async () => {
                                     try {
                                         if (record.targetSuspended) {
-                                            await restoreClub.mutateAsync(record.targetId);
+                                            await restoreClubMutation.mutateAsync(record.targetId);
                                             messageApi.success("Club ripristinato");
                                         } else {
-                                            await suspendClub.mutateAsync(record.targetId);
+                                            await suspendClubMutation.mutateAsync(record.targetId);
                                             messageApi.success("Club sospeso");
                                         }
-                                        await handleResolve(record.id);
+
+                                        await resolveReport(record.id);
                                     } catch (err) {
                                         messageApi.error(getErrorMessage(err, "Errore azione club"));
                                     }
@@ -174,31 +186,41 @@ export default function ModerationQueue() {
                 ),
             },
         ],
-        [hideEvent, messageApi, restoreClub, suspendClub, updateStatus]
+        [
+            hideEventMutation,
+            messageApi,
+            restoreClubMutation,
+            suspendClubMutation,
+            updateStatusMutation,
+            statusFilter,
+            typeFilter,
+        ]
     );
 
     return (
         <div style={{ padding: 24 }}>
             {contextHolder}
+
             <Space direction="vertical" size="large" style={{ width: "100%" }}>
                 <Card>
                     <Space align="center" style={{ justifyContent: "space-between", width: "100%" }}>
                         <Title level={3} style={{ margin: 0 }}>
                             Moderazione
                         </Title>
+
                         <Space>
                             <Select
-                                value={status}
+                                value={statusFilter}
                                 options={STATUS_OPTIONS}
-                                onChange={setStatus}
+                                onChange={setStatusFilter}
                                 style={{ width: 160 }}
                             />
                             <Select
                                 allowClear
                                 placeholder="Tipo"
-                                value={type}
+                                value={typeFilter}
                                 options={TYPE_OPTIONS}
-                                onChange={setType}
+                                onChange={setTypeFilter}
                                 style={{ width: 140 }}
                             />
                         </Space>

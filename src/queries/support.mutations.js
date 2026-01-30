@@ -3,10 +3,10 @@ import { api } from "../api/apiClient.js";
 
 export function useReportSupport() {
     return useMutation({
-        mutationKey: ["support-report"],
+        mutationKey: ["reportSupport"],
         mutationFn: async (payload) => {
-            const { data } = await api.post("/support/report", payload);
-            return data;
+            const res = await api.post("/support/report", payload);
+            return res.data;
         },
     });
 }

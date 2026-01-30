@@ -1,7 +1,6 @@
-import React from "react";
 import { useNavigate } from "react-router-dom";
 import { useClubs } from "../queries/clubs.queries";
-import { Card, List, Typography, Skeleton, Empty, Alert, Tag, Button, Space } from "antd";
+import { Alert, Button, Card, Empty, List, Skeleton, Space, Tag, Typography } from "antd";
 import { ArrowLeftOutlined } from "@ant-design/icons";
 
 const { Title, Paragraph, Text } = Typography;
@@ -12,7 +11,6 @@ export default function Club() {
 
     return (
         <div style={{ padding: 24 }}>
-            {/* Bottone back */}
             <Space size="small" style={{ marginBottom: 12 }}>
                 <Button icon={<ArrowLeftOutlined />} onClick={() => navigate("/home")}>
                     Torna alla home
@@ -32,6 +30,7 @@ export default function Club() {
                 </span>{" "}
                 — scopri le community
             </Title>
+
             <Text type="secondary">
                 Sfoglia i club dell’ateneo e apri il dettaglio per informazioni e membri.
             </Text>
@@ -57,25 +56,25 @@ export default function Club() {
                     </Card>
                 )}
 
-                {status === "success" && data && data.length > 0 && (
+                {status === "success" && data?.length > 0 && (
                     <List
                         grid={{ gutter: 16, xs: 1, sm: 2, md: 3, lg: 4 }}
                         dataSource={data}
-                        renderItem={(c) => (
-                            <List.Item key={c.id}>
+                        renderItem={(club) => (
+                            <List.Item key={club.id}>
                                 <Card
                                     hoverable
-                                    onClick={() => navigate(`/clubs/${c.id}`)}
+                                    onClick={() => navigate(`/clubs/${club.id}`)}
                                     style={{ borderRadius: 12, height: "100%" }}
                                     bodyStyle={{ display: "flex", flexDirection: "column", gap: 8 }}
-                                    title={<Text strong>{c.name}</Text>}
+                                    title={<Text strong>{club.name}</Text>}
                                     extra={<Tag color="geekblue">Club</Tag>}
                                 >
                                     <Paragraph
                                         ellipsis={{ rows: 3 }}
                                         style={{ marginBottom: 0, minHeight: 72 }}
                                     >
-                                        {c.description}
+                                        {club.description}
                                     </Paragraph>
                                 </Card>
                             </List.Item>

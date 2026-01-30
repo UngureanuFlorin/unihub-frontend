@@ -1,18 +1,27 @@
 import { useQuery } from "@tanstack/react-query";
 import { api } from "../api/apiClient.js";
 
+async function fetchUniversita() {
+    const { data } = await api.get("/universita");
+    return data;
+}
+
+async function fetchDipartimenti(universityId) {
+    const { data } = await api.get(`/universita/${universityId}/dipartimenti`);
+    return data;
+}
+
 export function useUniversitaList() {
     return useQuery({
         queryKey: ["universita"],
-        queryFn: () => api.get("/universita").then((r) => r.data),
+        queryFn: fetchUniversita,
     });
 }
 
 export function useDipartimenti(universitaId) {
     return useQuery({
         queryKey: ["dipartimenti", universitaId],
-        queryFn: () =>
-            api.get(`/universita/${universitaId}/dipartimenti`).then((r) => r.data),
-        enabled: !!universitaId,
+        queryFn: () => fetchDipartimenti(universitaId),
+        enabled: Boolean(universitaId),
     });
 }

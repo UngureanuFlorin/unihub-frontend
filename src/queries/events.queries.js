@@ -1,9 +1,6 @@
-import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { api } from "../api/apiClient.js";
 
-/* ================================
-   🕒 Utility: formattazione date
-================================ */
 function formatPretty(iso) {
     if (!iso) return undefined;
     return new Date(iso).toLocaleString("it-IT", {
@@ -20,10 +17,7 @@ function formatRaw(iso) {
     return new Date(iso).toISOString().slice(0, 16).replace("T", " ");
 }
 
-/* ================================
-   🔁 Mapping DTO → UI shape
-================================ */
-function toUiEvent(dto) {
+function mapEventToUi(dto) {
     return {
         id: String(dto.id),
         title: dto.titolo,
@@ -36,7 +30,7 @@ function toUiEvent(dto) {
     };
 }
 
-function toUiEventDetail(dto) {
+function mapEventDetailToUi(dto) {
     return {
         id: String(dto.id),
         title: dto.titolo,
@@ -53,7 +47,7 @@ function toUiEventDetail(dto) {
         deadlinePretty: formatPretty(dto.deadlineIscrizione),
         average: 0,
         comments: [],
-        userIscritto: dto.userIscritto ?? false, // boolean dal backend
+        userIscritto: dto.userIscritto ?? false,
         attendees: Array.isArray(dto.iscritti)
             ? dto.iscritti.map((u) => ({
                 id: String(u.id),
@@ -63,36 +57,23 @@ function toUiEventDetail(dto) {
             : [],
     };
 }
-export async function fetchEvents(filters = {}) {
-    // pulizia: togli chiavi vuote/null per non sporcare la querystring
-    const params = Object.fromEntries(
-        Object.entries(filters).filter(
-            ([, v]) => v !== "" && v !== null && v !== undefined
-        )
+
+function cleanParams(filters) {
+    return Object.fromEntries(
+        Object.entries(filters).filter(([, value]) => value !== "" && value !== null && value !== undefined)
     );
-
-    // NB: se apiClient ha baseURL già con /api, qui basta "/eventi/search"
-    const res = await api.get("/eventi/search", { params });
-
-    // backend ritorna array di DTO
-    if (Array.isArray(res.data)) return res.data.map(toUiEvent);
-
-    // fallback (se per sbaglio arriva altro)
-    return [];
 }
 
-// 🔹 Recupera un singolo evento per ID (DETTAGLIO)
+export async function fetchEvents(filters = {}) {
+    const res = await api.get("/eventi/search", { params: cleanParams(filters) });
+    return Array.isArray(res.data) ? res.data.map(mapEventToUi) : [];
+}
+
 export async function fetchEvent(id) {
-    // ✅ niente più params username → chiamata pulita
     const res = await api.get(`/eventi/${id}`);
-    return toUiEventDetail(res.data);
+    return mapEventDetailToUi(res.data);
 }
 
-/* ================================
-   🎣 React Query hooks
-================================ */
-
-// 🔹 Hook per lista con infinite scroll
 export function useEvents(filters = {}) {
     return useQuery({
         queryKey: ["events", filters],
@@ -101,11 +82,10 @@ export function useEvents(filters = {}) {
     });
 }
 
-// 🔹 Hook per dettaglio evento
 export function useEvent(id) {
     return useQuery({
         queryKey: ["event", id],
         queryFn: () => fetchEvent(id),
-        enabled: !!id, // attiva solo se l'id esiste
+        enabled: Boolean(id),
     });
 }

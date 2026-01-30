@@ -5,25 +5,28 @@ export function useCreateComment() {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: async (commento) => {
-            const { data } = await api.post("/commenti", commento);
+        mutationKey: ["createComment"],
+        mutationFn: async (payload) => {
+            const { data } = await api.post("/commenti", payload);
             return data;
         },
         onSuccess: (_, variables) => {
-            queryClient.invalidateQueries(["comments", variables.eventoId]);
+            queryClient.invalidateQueries({ queryKey: ["comments", variables.eventoId] });
         },
     });
 }
+
 export function useDeleteComment() {
     const queryClient = useQueryClient();
 
     return useMutation({
+        mutationKey: ["deleteComment"],
         mutationFn: async ({ commentId, eventoId }) => {
             await api.delete(`/commenti/${commentId}`);
             return { commentId, eventoId };
         },
         onSuccess: (_, { eventoId }) => {
-            queryClient.invalidateQueries(["comments", eventoId]);
+            queryClient.invalidateQueries({ queryKey: ["comments", eventoId] });
         },
     });
 }

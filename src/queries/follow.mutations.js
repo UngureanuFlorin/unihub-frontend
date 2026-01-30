@@ -4,24 +4,32 @@ import { api } from "../api/apiClient.js";
 export function useFollowUser() {
     return useMutation({
         mutationKey: ["follow"],
-        mutationFn: ({ followerId, seguitoId }) =>
-            api.post(`/follow/${followerId}/segui/${seguitoId}`).then(r => r.data),
+        mutationFn: async ({ followerId, seguitoId }) => {
+            const res = await api.post(`/follow/${followerId}/segui/${seguitoId}`);
+            return res.data;
+        },
     });
 }
 
 export function useUnfollowUser() {
     return useMutation({
         mutationKey: ["unfollow"],
-        mutationFn: ({ followerId, seguitoId }) =>
-            api.delete(`/follow/${followerId}/unfollow/${seguitoId}`).then(r => r.data),
+        mutationFn: async ({ followerId, seguitoId }) => {
+            const res = await api.delete(`/follow/${followerId}/unfollow/${seguitoId}`);
+            return res.data;
+        },
     });
 }
 
 export function useFollowStatus(followerId, seguitoId) {
+    const enabled = Boolean(followerId && seguitoId);
+
     return useQuery({
         queryKey: ["follow-status", followerId, seguitoId],
-        queryFn: () =>
-            api.get(`/follow/${followerId}/status/${seguitoId}`).then(r => r.data),
-        enabled: Boolean(followerId && seguitoId),
+        queryFn: async () => {
+            const res = await api.get(`/follow/${followerId}/status/${seguitoId}`);
+            return res.data;
+        },
+        enabled,
     });
 }

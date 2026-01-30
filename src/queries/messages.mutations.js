@@ -1,29 +1,29 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { message } from "antd";
 import { api } from "../api/apiClient.js";
-import { message as antdMessage } from "antd";
 import { getErrorMessage } from "../utils/error.js";
 
-export const useSendMessage = () => {
-    const qc = useQueryClient();
-    const [msgApi] = antdMessage.useMessage();
+export function useSendMessage() {
+    const queryClient = useQueryClient();
+    const [messageApi] = message.useMessage();
 
-    const mutation = useMutation({
+    return useMutation({
         mutationKey: ["sendMessage"],
         mutationFn: async ({ senderId, receiverId, content }) => {
             const res = await api.post(`/messages/send/${senderId}`, {
                 receiverId,
-                content
+                content,
             });
             return res.data;
         },
-        onSuccess: (data, variables) => {
-            msgApi.success("Messaggio inviato!");
-            qc.invalidateQueries(["receivedMessages", variables.receiverId]);
+        onSuccess: (_, variables) => {
+            messageApi.success("Messaggio inviato");
+            queryClient.invalidateQueries({
+                queryKey: ["receivedMessages", variables.receiverId],
+            });
         },
         onError: (err) => {
-            msgApi.error(getErrorMessage(err, "Errore invio messaggio"));
+            messageApi.error(getErrorMessage(err, "Errore invio messaggio"));
         },
     });
-
-    return mutation;
-};
+}

@@ -1,36 +1,63 @@
-import React from "react";
-import {
-    Row,
-    Col,
-    Typography,
-    Button,
-    Card,
-    Space,
-    Tag,
-    Divider,
-    Tooltip,
-    Avatar, Badge,
-} from "antd";
+import { Avatar, Badge, Button, Card, Col, Divider, Row, Space, Tag, Tooltip, Typography } from "antd";
 import {
     CalendarOutlined,
-    PlusCircleOutlined,
     CompassOutlined,
-    UserOutlined,
     InboxOutlined,
+    PlusCircleOutlined,
+    UserOutlined,
 } from "@ant-design/icons";
 import { Link, useNavigate } from "react-router-dom";
 import useAuth from "../hooks/useAuth.js";
 import { useUserProfile } from "../queries/users.queries.js";
-import {useUnreadMessages} from "../queries/messages.queries.js";
+import { useUnreadMessages } from "../queries/messages.queries.js";
 
 const { Title, Paragraph, Text } = Typography;
 
-function Home() {
+const iconBaseStyle = {
+    fontSize: 26,
+    color: "#1677ff",
+    cursor: "pointer",
+    transition: "transform 0.2s ease",
+};
+
+const avatarBaseStyle = {
+    cursor: "pointer",
+    border: "2px solid #1677ff",
+    transition: "transform 0.2s ease",
+};
+
+const rocketBaseStyle = {
+    position: "absolute",
+    top: 20,
+    right: 28,
+    fontSize: 36,
+    cursor: "pointer",
+    userSelect: "none",
+    transition: "transform 0.25s ease",
+};
+
+function scaleOn(enterScale, rotate = 0) {
+    return {
+        onMouseEnter: (e) => {
+            e.currentTarget.style.transform = `scale(${enterScale}) rotate(${rotate}deg)`;
+        },
+        onMouseLeave: (e) => {
+            e.currentTarget.style.transform = "scale(1) rotate(0deg)";
+        },
+    };
+}
+
+export default function Home() {
     const navigate = useNavigate();
     const { user } = useAuth();
-    const { data: unreadCount = 0, isLoading } = useUnreadMessages(user?.id);
-    const { data: profile } = useUserProfile(user?.id);
+
+    const userId = user?.id;
+
+    const { data: unreadCount = 0, isLoading: isUnreadLoading } = useUnreadMessages(userId);
+    const { data: profile } = useUserProfile(userId);
+
     const isSuperAdmin = user?.role === "SUPERADMIN";
+
     return (
         <div
             style={{
@@ -40,7 +67,6 @@ function Home() {
                 position: "relative",
             }}
         >
-            {/* 🚀 Se NON loggato → mostra il razzo */}
             {!user && (
                 <Tooltip
                     placement="bottomRight"
@@ -55,27 +81,14 @@ function Home() {
                                 fontSize: 14,
                             }}
                         >
-              🚀 Entra nel tuo spazio!
-            </span>
+                            Entra nel tuo spazio!
+                        </span>
                     }
                 >
                     <div
                         onClick={() => navigate("/login")}
-                        style={{
-                            position: "absolute",
-                            top: 20,
-                            right: 28,
-                            fontSize: 36,
-                            cursor: "pointer",
-                            userSelect: "none",
-                            transition: "transform 0.25s ease",
-                        }}
-                        onMouseEnter={(e) =>
-                            (e.currentTarget.style.transform = "scale(1.2) rotate(10deg)")
-                        }
-                        onMouseLeave={(e) =>
-                            (e.currentTarget.style.transform = "scale(1) rotate(0deg)")
-                        }
+                        style={rocketBaseStyle}
+                        {...scaleOn(1.2, 10)}
                     >
                         🚀
                     </div>
@@ -93,28 +106,17 @@ function Home() {
                         gap: 16,
                     }}
                 >
-                    {/* 📥 Inbox */}
                     <Tooltip title="Messaggi">
-                        <Badge count={isLoading ? 0 : unreadCount} size="small">
+                        <Badge count={isUnreadLoading ? 0 : unreadCount} size="small">
                             <InboxOutlined
-                                style={{
-                                    fontSize: 26,
-                                    color: "#1677ff",
-                                    cursor: "pointer",
-                                    transition: "transform 0.2s ease",
-                                }}
+                                style={iconBaseStyle}
                                 onClick={() => navigate("/messages")}
-                                onMouseEnter={(e) =>
-                                    (e.currentTarget.style.transform = "scale(1.15)")
-                                }
-                                onMouseLeave={(e) =>
-                                    (e.currentTarget.style.transform = "scale(1)")
-                                }
+                                onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.15)")}
+                                onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
                             />
                         </Badge>
                     </Tooltip>
 
-                    {/* 👤 Avatar */}
                     <Tooltip
                         placement="bottomRight"
                         color="white"
@@ -122,15 +124,14 @@ function Home() {
                             <span
                                 style={{
                                     fontWeight: "bold",
-                                    background:
-                                        "linear-gradient(90deg, #00d2ff 0%, #3a47d5 100%)",
+                                    background: "linear-gradient(90deg, #00d2ff 0%, #3a47d5 100%)",
                                     WebkitBackgroundClip: "text",
                                     WebkitTextFillColor: "transparent",
                                     fontSize: 14,
                                 }}
                             >
-                    👋 Ciao {user.username}!
-                </span>
+                                Ciao {user.username}!
+                            </span>
                         }
                     >
                         <Avatar
@@ -138,23 +139,14 @@ function Home() {
                             icon={<UserOutlined />}
                             src={profile?.profileImage || user.image || null}
                             onClick={() => navigate("/profile")}
-                            style={{
-                                cursor: "pointer",
-                                border: "2px solid #1677ff",
-                                transition: "transform 0.2s ease",
-                            }}
-                            onMouseEnter={(e) =>
-                                (e.currentTarget.style.transform = "scale(1.15)")
-                            }
-                            onMouseLeave={(e) =>
-                                (e.currentTarget.style.transform = "scale(1)")
-                            }
+                            style={avatarBaseStyle}
+                            onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.15)")}
+                            onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
                         />
                     </Tooltip>
                 </div>
             )}
 
-            {/* CONTENUTO CENTRALE */}
             <Row justify="center" gutter={[24, 24]} style={{ width: "100%" }}>
                 <Col xs={24} md={18} lg={14}>
                     <Card
@@ -168,17 +160,18 @@ function Home() {
                         }}
                     >
                         <div style={{ fontSize: 42, lineHeight: 1, marginBottom: 8 }}>👋</div>
+
                         <Title level={1} style={{ marginBottom: 8 }}>
-              <span
-                  style={{
-                      background: "linear-gradient(90deg, #00d2ff 0%, #3a47d5 100%)",
-                      WebkitBackgroundClip: "text",
-                      WebkitTextFillColor: "transparent",
-                      fontWeight: 800,
-                  }}
-              >
-                UniHub
-              </span>
+                            <span
+                                style={{
+                                    background: "linear-gradient(90deg, #00d2ff 0%, #3a47d5 100%)",
+                                    WebkitBackgroundClip: "text",
+                                    WebkitTextFillColor: "transparent",
+                                    fontWeight: 800,
+                                }}
+                            >
+                                UniHub
+                            </span>
                         </Title>
 
                         <Paragraph
@@ -187,18 +180,17 @@ function Home() {
                                 color: "#333",
                                 marginBottom: 24,
                                 fontWeight: 300,
-                                maxWidth: 600, // 🔹 limita la larghezza del blocco testo
-                                marginLeft: "auto", // 🔹 centrato orizzontalmente
+                                maxWidth: 600,
+                                marginLeft: "auto",
                                 marginRight: "auto",
-                                lineHeight: 1.6, // 🔹 più aria tra le righe
-                                textAlign: "center", // 🔹 allineamento centrale
+                                lineHeight: 1.6,
+                                textAlign: "center",
                             }}
                         >
-                            La casa degli <b>eventi universitari</b> e dei{" "}
-                            <b>club studenteschi</b>.<br />
+                            La casa degli <b>eventi universitari</b> e dei <b>club studenteschi</b>.
+                            <br />
                             Scopri cosa succede nel tuo ateneo e proponi le tue iniziative.
                         </Paragraph>
-
 
                         <Space size="middle" wrap style={{ justifyContent: "center" }}>
                             <Link to="/events">
@@ -206,12 +198,9 @@ function Home() {
                                     Esplora eventi
                                 </Button>
                             </Link>
+
                             <Link to="/create/event">
-                                <Button
-                                    type="primary"
-                                    size="large"
-                                    icon={<PlusCircleOutlined />}
-                                >
+                                <Button type="primary" size="large" icon={<PlusCircleOutlined />}>
                                     Crea evento
                                 </Button>
                             </Link>
@@ -219,7 +208,6 @@ function Home() {
 
                         <Divider style={{ margin: "24px 0" }} />
 
-                        {/* Pillole rapide */}
                         <Space size={[8, 8]} wrap style={{ justifyContent: "center" }}>
                             <Tag color="geekblue">Accademico</Tag>
                             <Tag color="green">Sport</Tag>
@@ -229,7 +217,6 @@ function Home() {
                         </Space>
                     </Card>
 
-                    {/* 3 highlight minimal */}
                     <Row gutter={[16, 16]} style={{ marginTop: 24 }}>
                         <Col xs={24} md={8}>
                             <Card hoverable style={{ borderRadius: 12 }}>
@@ -237,12 +224,11 @@ function Home() {
                                     <Text strong>
                                         <CalendarOutlined /> Questa settimana
                                     </Text>
-                                    <Text type="secondary">
-                                        Hackathon, workshop e sport di ateneo.
-                                    </Text>
+                                    <Text type="secondary">Hackathon, workshop e sport di ateneo.</Text>
                                 </Space>
                             </Card>
                         </Col>
+
                         <Col xs={24} md={8}>
                             <Link to="/clubs">
                                 <Card hoverable style={{ borderRadius: 12 }}>
@@ -255,6 +241,7 @@ function Home() {
                                 </Card>
                             </Link>
                         </Col>
+
                         <Col xs={24} md={8}>
                             <Link to="/users">
                                 <Card hoverable style={{ borderRadius: 12 }}>
@@ -267,6 +254,7 @@ function Home() {
                                 </Card>
                             </Link>
                         </Col>
+
                         {isSuperAdmin && (
                             <Col xs={24} md={8}>
                                 <Link to="/universita">
@@ -287,5 +275,3 @@ function Home() {
         </div>
     );
 }
-
-export default Home;

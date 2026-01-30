@@ -1,15 +1,11 @@
-import React from "react";
-import { useParams, Link } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
+import { Alert, Button, Card, Col, List, Row, Skeleton, Space, Tag, Typography, message } from "antd";
+import { ArrowLeftOutlined, CalendarOutlined, TeamOutlined, UserOutlined } from "@ant-design/icons";
 import { useUserProfile } from "../queries/users.queries";
 import { useFollowUser, useUnfollowUser } from "../queries/follow.mutations";
-import { useQueryClient } from "@tanstack/react-query";
 import { useSendMessage } from "../queries/messages.mutations.js";
 import { getErrorMessage } from "../utils/error.js";
-import {
-    Card, Typography, Space, Tag, Button, Row, Col,
-    List, Skeleton, Alert, message
-} from "antd";
-import { ArrowLeftOutlined, UserOutlined, TeamOutlined, CalendarOutlined } from "@ant-design/icons";
 
 const { Title, Text } = Typography;
 
@@ -23,8 +19,10 @@ const ROLE_COLORS = {
 
 export default function UserProfile() {
     const { id } = useParams();
-    const qc = useQueryClient();
-    const { data: p, status, error } = useUserProfile(id);
+    const queryClient = useQueryClient();
+
+    const { data: profile, status, error } = useUserProfile(id);
+
     const followMutation = useFollowUser();
     const unfollowMutation = useUnfollowUser();
     const sendMessageMutation = useSendMessage();
@@ -40,37 +38,50 @@ export default function UserProfile() {
     if (status === "error") {
         return (
             <div style={{ padding: 24 }}>
-                <Alert type="error" message="Errore nel caricamento profilo" description={String(error)} />
+                <Alert
+                    type="error"
+                    message="Errore nel caricamento profilo"
+                    description={String(error)}
+                />
                 <div style={{ marginTop: 12 }}>
-                    <Link to="/people"><Button icon={<ArrowLeftOutlined />}>Torna</Button></Link>
+                    <Link to="/people">
+                        <Button icon={<ArrowLeftOutlined />}>Torna</Button>
+                    </Link>
                 </div>
             </div>
         );
     }
 
-    const me = JSON.parse(localStorage.getItem("user"));
-    const isSelf = me?.id === p.id;
+    if (!profile) return null;
 
-    const onToggleFollow = () => {
-        if (!me?.id) {
+    const currentUser = JSON.parse(localStorage.getItem("user"));
+    const isSelf = currentUser?.id === profile.id;
+
+    const toggleFollow = () => {
+        if (!currentUser?.id) {
             message.error("Devi essere loggato");
             return;
         }
-        const action = p.following ? unfollowMutation : followMutation;
-        action.mutate(
-            { followerId: me.id, seguitoId: p.id },
+
+        const mutation = profile.following ? unfollowMutation : followMutation;
+
+        mutation.mutate(
+            { followerId: currentUser.id, seguitoId: profile.id },
             {
                 onSuccess: () => {
-                    message.success(p.following ? "Unfollow eseguito" : "Ora segui l’utente");
-                    qc.invalidateQueries({ queryKey: ["user-profile", id, me.id] });
+                    message.success(profile.following ? "Unfollow eseguito" : "Ora segui l’utente");
+                    queryClient.invalidateQueries({ queryKey: ["user-profile", id, currentUser.id] });
                 },
-                onError: (err) => message.error(getErrorMessage(err, "Errore operazione")),
+                onError: (err) => {
+                    message.error(getErrorMessage(err, "Errore operazione"));
+                },
             }
         );
-        if (!p.following) {
+
+        if (!profile.following) {
             sendMessageMutation.mutate({
-                senderId: me.id,
-                receiverId: p.id,
+                senderId: currentUser.id,
+                receiverId: profile.id,
                 content: "Ciao! Ti sto seguendo su UniHub 😊",
             });
         }
@@ -84,7 +95,6 @@ export default function UserProfile() {
                 </Link>
             </Space>
 
-            {/* Header profilo */}
             <Card
                 bordered={false}
                 style={{ borderRadius: 16, marginBottom: 16 }}
@@ -94,34 +104,36 @@ export default function UserProfile() {
                     <Col xs={24} md={18}>
                         <Space direction="vertical" size={2}>
                             <Title level={3} style={{ margin: 0 }}>
-                <span
-                    style={{
-                        background: "linear-gradient(90deg, #00d2ff 0%, #3a47d5 100%)",
-                        WebkitBackgroundClip: "text",
-                        WebkitTextFillColor: "transparent",
-                        fontWeight: 800,
-                    }}
-                >
-                  {p.name} {p.surname}
-                </span>{" "}
-                                <Text type="secondary">@{p.username}</Text>
+                                <span
+                                    style={{
+                                        background: "linear-gradient(90deg, #00d2ff 0%, #3a47d5 100%)",
+                                        WebkitBackgroundClip: "text",
+                                        WebkitTextFillColor: "transparent",
+                                        fontWeight: 800,
+                                    }}
+                                >
+                                    {profile.name} {profile.surname}
+                                </span>{" "}
+                                <Text type="secondary">@{profile.username}</Text>
                             </Title>
 
                             <Space wrap>
-                                {p.role && <Tag color={ROLE_COLORS[p.role] || "default"}>{p.role}</Tag>}
-                                {p.university && <Tag color="geekblue">{p.university}</Tag>}
-                                {p.faculty && <Tag color="purple">{p.faculty}</Tag>}
+                                {profile.role && (
+                                    <Tag color={ROLE_COLORS[profile.role] || "default"}>{profile.role}</Tag>
+                                )}
+                                {profile.university && <Tag color="geekblue">{profile.university}</Tag>}
+                                {profile.faculty && <Tag color="purple">{profile.faculty}</Tag>}
                             </Space>
 
                             <Space size="large" wrap style={{ marginTop: 8 }}>
                                 <Space>
                                     <TeamOutlined />
-                                    <Text strong>{p.followerCount}</Text>
+                                    <Text strong>{profile.followerCount}</Text>
                                     <Text type="secondary">follower</Text>
                                 </Space>
                                 <Space>
                                     <UserOutlined />
-                                    <Text strong>{p.followingCount}</Text>
+                                    <Text strong>{profile.followingCount}</Text>
                                     <Text type="secondary">seguiti</Text>
                                 </Space>
                             </Space>
@@ -130,38 +142,37 @@ export default function UserProfile() {
 
                     <Col xs={24} md={6} style={{ textAlign: "right" }}>
                         {!isSelf && (
-                            <Button
-                                type={p.following ? "default" : "primary"}
-                                onClick={onToggleFollow}
-                            >
-                                {p.following ? "Non seguire più" : "Segui"}
+                            <Button type={profile.following ? "default" : "primary"} onClick={toggleFollow}>
+                                {profile.following ? "Non seguire più" : "Segui"}
                             </Button>
                         )}
                     </Col>
                 </Row>
             </Card>
 
-            {/* Eventi creati (recenti) */}
             <Card title="Eventi recenti" bordered={false} style={{ borderRadius: 16 }}>
-                {(!p.recentEvents || p.recentEvents.length === 0) ? (
+                {!profile.recentEvents || profile.recentEvents.length === 0 ? (
                     <Text type="secondary">Nessun evento recente.</Text>
                 ) : (
                     <List
                         grid={{ gutter: 16, xs: 1, sm: 2, md: 3 }}
-                        dataSource={p.recentEvents}
-                        renderItem={(ev) => (
-                            <List.Item key={ev.id}>
+                        dataSource={profile.recentEvents}
+                        renderItem={(event) => (
+                            <List.Item key={event.id}>
                                 <Card hoverable style={{ borderRadius: 12 }} bodyStyle={{ padding: 16 }}>
                                     <Space direction="vertical" size={6}>
                                         <Space>
                                             <CalendarOutlined />
-                                            <Text strong>{ev.titolo}</Text>
+                                            <Text strong>{event.titolo}</Text>
                                         </Space>
+
                                         <Text type="secondary">
-                                            {ev.dataInizio?.replace("T", " ").slice(0, 16)}
+                                            {event.dataInizio?.replace("T", " ").slice(0, 16)}
                                         </Text>
-                                        {ev.luogo && <Tag>{ev.luogo}</Tag>}
-                                        <Link to={`/events/${ev.id}`}>
+
+                                        {event.luogo && <Tag>{event.luogo}</Tag>}
+
+                                        <Link to={`/events/${event.id}`}>
                                             <Button size="small" type="link" style={{ padding: 0 }}>
                                                 Vai all’evento
                                             </Button>

@@ -1,17 +1,16 @@
-import React from "react";
-import { Card, Form, Input, DatePicker, InputNumber, Button, message } from "antd";
+import { Button, Card, DatePicker, Form, Input, InputNumber, message } from "antd";
 import { useCreateEvent } from "../queries/events.mutations";
 import { getErrorMessage } from "../utils/error.js";
 
 const { TextArea } = Input;
 const { RangePicker } = DatePicker;
 
-function SubmitEvent() {
+export default function SubmitEvent() {
     const [form] = Form.useForm();
     const createEventMutation = useCreateEvent();
     const [messageApi, contextHolder] = message.useMessage();
 
-    const onFinish = async (values) => {
+    const handleSubmit = async (values) => {
         try {
             const username = JSON.parse(localStorage.getItem("user"))?.username;
             if (!username) {
@@ -31,22 +30,23 @@ function SubmitEvent() {
                 deadlineIscrizione: values.deadline.toISOString(),
             };
 
-            // passa username come query param
             await createEventMutation.mutateAsync({ eventPayload, username });
 
-            messageApi.success("✅ Evento creato con successo!");
+            messageApi.success("Evento creato con successo!");
             form.resetFields();
         } catch (err) {
             messageApi.error(getErrorMessage(err, "Errore durante la creazione"));
         }
     };
 
+    const isSubmitting = createEventMutation.isPending;
 
     return (
         <div style={{ padding: 24 }}>
             {contextHolder}
+
             <Card
-                title="🎉 Crea un nuovo evento"
+                title="Crea un nuovo evento"
                 style={{
                     maxWidth: 700,
                     margin: "0 auto",
@@ -57,10 +57,8 @@ function SubmitEvent() {
                 <Form
                     form={form}
                     layout="vertical"
-                    onFinish={onFinish}
-                    initialValues={{
-                        totalSeats: 100,
-                    }}
+                    onFinish={handleSubmit}
+                    initialValues={{ totalSeats: 100 }}
                 >
                     <Form.Item
                         name="title"
@@ -129,9 +127,9 @@ function SubmitEvent() {
                             htmlType="submit"
                             block
                             size="large"
-                            loading={createEventMutation.isPending}
+                            loading={isSubmitting}
                         >
-                            {createEventMutation.isPending ? "Creazione in corso..." : "Crea evento"}
+                            {isSubmitting ? "Creazione in corso..." : "Crea evento"}
                         </Button>
                     </Form.Item>
                 </Form>
@@ -139,5 +137,3 @@ function SubmitEvent() {
         </div>
     );
 }
-
-export default SubmitEvent;

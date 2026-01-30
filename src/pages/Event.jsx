@@ -1,9 +1,16 @@
-import React, { useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import {useEvents} from "../queries/events.queries";
+import { useEvents } from "../queries/events.queries";
 import Hero from "../components/common/Hero.jsx";
 import Filters from "../components/common/Filters.jsx";
 import List from "../components/common/List.jsx";
+
+function toLocalDateTimeParam(value) {
+    if (!value) return undefined;
+
+    const date = typeof value.toDate === "function" ? value.toDate() : value;
+    return date.toISOString().slice(0, 19);
+}
 
 export default function Event() {
     const navigate = useNavigate();
@@ -15,16 +22,6 @@ export default function Event() {
         faculty: "",
         dateRange: null,
     });
-
-    const toLocalDateTimeParam = (d) => {
-        if (!d) return undefined;
-
-        // supporta dayjs/moment (hanno toDate())
-        const dateObj = typeof d.toDate === "function" ? d.toDate() : d;
-
-        // manda "YYYY-MM-DDTHH:mm:ss" (senza Z) -> perfetto per LocalDateTime
-        return dateObj.toISOString().slice(0, 19);
-    };
 
     const params = useMemo(() => {
         const [start, end] = filters.dateRange ?? [];
@@ -44,15 +41,14 @@ export default function Event() {
         <div style={{ padding: 24 }}>
             <Hero
                 titleGradientText="UniHub"
-
                 subtitle="Filtra per ateneo, categoria e data. Clicca un evento per i dettagli."
-                onSearch={(q) => setFilters((f) => ({ ...f, search: q }))}
+                onSearch={(search) => setFilters((prev) => ({ ...prev, search }))}
             />
 
             <Filters
                 value={filters}
                 onChange={setFilters}
-                onQuickTag={(tag) => setFilters((f) => ({ ...f, search: tag }))}
+                onQuickTag={(tag) => setFilters((prev) => ({ ...prev, search: tag }))}
             />
 
             <List

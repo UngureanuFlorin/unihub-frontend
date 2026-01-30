@@ -5,11 +5,12 @@ export function useUpdateUserProfile() {
     const queryClient = useQueryClient();
 
     return useMutation({
+        mutationKey: ["updateUserProfile"],
         mutationFn: async ({ userId, payload }) => {
-            const { data } = await api.put(`/users/${userId}`, payload);
-            return data;
+            const res = await api.put(`/users/${userId}`, payload);
+            return res.data;
         },
-        onSuccess: (_, variables) => {
+        onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["user-profile"] });
         },
     });
@@ -19,13 +20,16 @@ export function useUploadProfileImage() {
     const queryClient = useQueryClient();
 
     return useMutation({
+        mutationKey: ["uploadProfileImage"],
         mutationFn: async ({ userId, file }) => {
             const formData = new FormData();
             formData.append("file", file);
-            const { data } = await api.post(`/users/${userId}/profile-image`, formData, {
+
+            const res = await api.post(`/users/${userId}/profile-image`, formData, {
                 headers: { "Content-Type": "multipart/form-data" },
             });
-            return data;
+
+            return res.data;
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["user-profile"] });
