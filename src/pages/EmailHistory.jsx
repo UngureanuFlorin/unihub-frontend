@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { Button, Card, Modal, Select, Space, Table, Tag, Typography } from "antd";
 import dayjs from "dayjs";
-import { useEmailLogs } from "../queries/emailLogs.queries.js";
+import { useEmailHistory } from "../queries/emailHistory.queries.js";
 
 const { Title, Text } = Typography;
 
@@ -25,12 +25,12 @@ const STATUS_COLOR = {
     FAILED: "red",
 };
 
-export default function EmailLogs() {
+export default function EmailHistory() {
     const [statusFilter, setStatusFilter] = useState(undefined);
     const [typeFilter, setTypeFilter] = useState(undefined);
     const [selectedLog, setSelectedLog] = useState(null);
 
-    const { data: logs = [], isLoading } = useEmailLogs({
+    const { data: logs = [], isLoading } = useEmailHistory({
         status: statusFilter,
         type: typeFilter,
     });
