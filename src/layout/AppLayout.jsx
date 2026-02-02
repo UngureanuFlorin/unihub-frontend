@@ -15,7 +15,11 @@ export default function AppLayout() {
 
     const selectedKey = pathname.startsWith("/create/event")
         ? "create-event"
-        : pathname.split("/")[1] || "home";
+        : pathname.startsWith("/moderation/emails")
+          ? "moderation-emails"
+          : pathname.startsWith("/moderation")
+            ? "moderation"
+            : pathname.split("/")[1] || "home";
 
     return (
         <Layout style={{ minHeight: "100vh" }}>
