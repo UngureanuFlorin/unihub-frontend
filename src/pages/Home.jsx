@@ -56,7 +56,7 @@ export default function Home() {
     const { data: unreadCount = 0, isLoading: isUnreadLoading } = useUnreadMessages(userId);
     const { data: profile } = useUserProfile(userId);
 
-    const isSuperAdmin = user?.role === "SUPERADMIN";
+    const isAdmin = user?.role === "ADMIN";
 
     return (
         <div
@@ -255,7 +255,7 @@ export default function Home() {
                             </Link>
                         </Col>
 
-                        {isSuperAdmin && (
+                        {isAdmin && (
                             <Col xs={24} md={8}>
                                 <Link to="/universita">
                                     <Card hoverable style={{ borderRadius: 12 }}>

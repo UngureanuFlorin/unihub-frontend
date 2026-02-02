@@ -5,11 +5,9 @@ import { useFollowStatus, useFollowUser, useUnfollowUser } from "../../queries/f
 const { Text } = Typography;
 
 const ROLE_COLORS = {
-    SUPERADMIN: "magenta",
     ADMIN: "red",
-    MODERATOR: "geekblue",
-    ORGANIZER: "green",
-    STUDENT: "blue",
+    USER: "blue",
+    GUEST: "default",
 };
 
 export default function UserCard({ u, onOpen }) {

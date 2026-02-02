@@ -2,7 +2,7 @@ import React from "react";
 import { Card, Row, Col, Select, DatePicker, Space, Tag } from "antd";
 const { RangePicker } = DatePicker;
 
-export default function Filters({ value, onChange, onQuickTag, universities = [] }) {
+export default function Filters({ value, onChange, onQuickTag, universities = [], categories = [] }) {
     const set = (patch) => onChange({ ...value, ...patch });
 
     const universityOptions = [
@@ -10,6 +10,14 @@ export default function Filters({ value, onChange, onQuickTag, universities = []
         ...universities.map((u) => ({
             value: u.nome,
             label: u.nome,
+        })),
+    ];
+
+    const categoryOptions = [
+        { value: "", label: "Tutte le categorie" },
+        ...categories.map((c) => ({
+            value: c.nome,
+            label: c.nome,
         })),
     ];
 
@@ -21,14 +29,7 @@ export default function Filters({ value, onChange, onQuickTag, universities = []
                         style={{ width: "100%" }}
                         placeholder="Categoria"
                         value={value.category}
-                        options={[
-                            { value: "", label: "Tutte le categorie" },
-                            { value: "accademico", label: "Accademico" },
-                            { value: "sport", label: "Sport" },
-                            { value: "cultura", label: "Cultura" },
-                            { value: "carriera", label: "Carriera" },
-                            { value: "volontariato", label: "Volontariato" },
-                        ]}
+                        options={categoryOptions}
                         onChange={(v) => set({ category: v })}
                     />
                 </Col>

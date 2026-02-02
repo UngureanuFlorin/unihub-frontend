@@ -1,6 +1,8 @@
-import { Button, Card, DatePicker, Form, Input, InputNumber, message } from "antd";
+import { Button, Card, DatePicker, Form, Input, InputNumber, Select, message } from "antd";
 import { useCreateEvent } from "../queries/events.mutations";
 import { getErrorMessage } from "../utils/error.js";
+import { useUserProfile } from "../queries/users.queries.js";
+import { useCategories } from "../queries/categories.queries.js";
 
 const { TextArea } = Input;
 const { RangePicker } = DatePicker;
@@ -9,6 +11,25 @@ export default function SubmitEvent() {
     const [form] = Form.useForm();
     const createEventMutation = useCreateEvent();
     const [messageApi, contextHolder] = message.useMessage();
+    const currentUserId = (() => {
+        try {
+            return JSON.parse(localStorage.getItem("user"))?.id ?? null;
+        } catch {
+            return null;
+        }
+    })();
+    const { data: profile } = useUserProfile(currentUserId);
+    const { data: categories = [] } = useCategories();
+
+    const categoryOptions = categories.length
+        ? categories.map((c) => ({ value: c.nome, label: c.nome }))
+        : [
+            { value: "accademico", label: "Accademico" },
+            { value: "sport", label: "Sport" },
+            { value: "cultura", label: "Cultura" },
+            { value: "carriera", label: "Carriera" },
+            { value: "volontariato", label: "Volontariato" },
+        ];
 
     const handleSubmit = async (values) => {
         try {
@@ -19,11 +40,19 @@ export default function SubmitEvent() {
             }
 
             const [start, end] = values.datetimeRange;
+            const userUniversity = profile?.university || profile?.universita || profile?.universitaNome;
+
+            if (!userUniversity) {
+                messageApi.error("Imposta l'universita nel profilo prima di creare un evento.");
+                return;
+            }
 
             const eventPayload = {
                 titolo: values.title,
                 descrizione: values.description,
                 luogo: values.place,
+                categoria: values.category,
+                universita: userUniversity,
                 dataInizio: start.toISOString(),
                 dataFine: end.toISOString(),
                 postiTotali: values.totalSeats,
@@ -85,6 +114,25 @@ export default function SubmitEvent() {
                         rules={[{ required: true, message: "Specifica il luogo" }]}
                     >
                         <Input placeholder="Esempio: Aula Magna 1 o Link Zoom" />
+                    </Form.Item>
+
+                    <Form.Item
+                        name="category"
+                        label="Categoria"
+                        rules={[{ required: true, message: "Seleziona una categoria" }]}
+                    >
+                        <Select
+                            placeholder="Seleziona una categoria"
+                            options={categoryOptions}
+                        />
+                    </Form.Item>
+
+                    <Form.Item label="Universita (dal profilo)">
+                        <Input
+                            value={profile?.university || profile?.universita || profile?.universitaNome || ""}
+                            placeholder="Imposta l'universita nel profilo"
+                            disabled
+                        />
                     </Form.Item>
 
                     <Form.Item

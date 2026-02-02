@@ -70,7 +70,13 @@ export async function fetchEvents(filters = {}) {
 }
 
 export async function fetchEvent(id) {
-    const res = await api.get(`/eventi/${id}`);
+    let userId = null;
+    try {
+        userId = JSON.parse(localStorage.getItem("user"))?.id ?? null;
+    } catch {
+        userId = null;
+    }
+    const res = await api.get(`/eventi/${id}`, { params: userId ? { userId } : {} });
     return mapEventDetailToUi(res.data);
 }
 

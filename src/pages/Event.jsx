@@ -1,6 +1,8 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useEvents } from "../queries/events.queries";
+import { useUniversitaList } from "../queries/universita.queries.js";
+import { useCategories } from "../queries/categories.queries.js";
 import Hero from "../components/common/Hero.jsx";
 import Filters from "../components/common/Filters.jsx";
 import List from "../components/common/List.jsx";
@@ -19,7 +21,6 @@ export default function Event() {
         search: "",
         category: "",
         university: "",
-        faculty: "",
         dateRange: null,
     });
 
@@ -29,13 +30,14 @@ export default function Event() {
             search: filters.search,
             category: filters.category,
             university: filters.university,
-            faculty: filters.faculty,
             from: toLocalDateTimeParam(start),
             to: toLocalDateTimeParam(end),
         };
     }, [filters]);
 
     const { data: items = [], isLoading, isError } = useEvents(params);
+    const { data: universities = [] } = useUniversitaList();
+    const { data: categories = [] } = useCategories();
 
     return (
         <div style={{ padding: 24 }}>
@@ -49,6 +51,8 @@ export default function Event() {
                 value={filters}
                 onChange={setFilters}
                 onQuickTag={(tag) => setFilters((prev) => ({ ...prev, search: tag }))}
+                universities={universities}
+                categories={categories}
             />
 
             <List
