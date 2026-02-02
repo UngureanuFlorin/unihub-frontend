@@ -1,16 +1,28 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useClubs } from "../queries/clubs.queries";
-import { Alert, Button, Card, Empty, List, Skeleton, Space, Tag, Typography } from "antd";
+import { Alert, Button, Card, Empty, Input, List, Skeleton, Space, Tag, Typography, message } from "antd";
 import { ArrowLeftOutlined } from "@ant-design/icons";
+import useAuth from "../hooks/useAuth.js";
+import { useCreateClub } from "../queries/clubs.mutations.js";
 
 const { Title, Paragraph, Text } = Typography;
 
 export default function Club() {
     const navigate = useNavigate();
     const { data, status, error } = useClubs();
+    const { user } = useAuth();
+    const isAdmin = user?.role === "ADMIN";
+    const createClubMutation = useCreateClub();
+    const [messageApi, contextHolder] = message.useMessage();
+
+    const [newClubName, setNewClubName] = useState("");
+    const [newClubDescription, setNewClubDescription] = useState("");
+    const [newClubSeats, setNewClubSeats] = useState("");
 
     return (
         <div style={{ padding: 24 }}>
+            {contextHolder}
             <Space size="small" style={{ marginBottom: 12 }}>
                 <Button icon={<ArrowLeftOutlined />} onClick={() => navigate("/home")}>
                     Torna alla home
@@ -36,6 +48,50 @@ export default function Club() {
             </Text>
 
             <div style={{ marginTop: 16 }}>
+                {isAdmin && (
+                    <Card title="Crea un club" style={{ marginBottom: 16 }}>
+                        <Space direction="vertical" size="small" style={{ width: "100%" }}>
+                            <Input
+                                placeholder="Nome club"
+                                value={newClubName}
+                                onChange={(e) => setNewClubName(e.target.value)}
+                            />
+                            <Input.TextArea
+                                rows={3}
+                                placeholder="Descrizione"
+                                value={newClubDescription}
+                                onChange={(e) => setNewClubDescription(e.target.value)}
+                            />
+                            <Input
+                                placeholder="Posti disponibili"
+                                value={newClubSeats}
+                                onChange={(e) => setNewClubSeats(e.target.value)}
+                            />
+                            <Button
+                                type="primary"
+                                loading={createClubMutation.isPending}
+                                onClick={async () => {
+                                    try {
+                                        const payload = {
+                                            nome: newClubName,
+                                            descrizione: newClubDescription,
+                                            postiDisponibili: Number(newClubSeats) || 0,
+                                        };
+                                        await createClubMutation.mutateAsync(payload);
+                                        setNewClubName("");
+                                        setNewClubDescription("");
+                                        setNewClubSeats("");
+                                        messageApi.success("Club creato");
+                                    } catch (err) {
+                                        messageApi.error(String(err?.response?.data || "Errore creazione club"));
+                                    }
+                                }}
+                            >
+                                Crea club
+                            </Button>
+                        </Space>
+                    </Card>
+                )}
                 {status === "pending" && (
                     <Card>
                         <Skeleton active />

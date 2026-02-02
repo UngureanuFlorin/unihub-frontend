@@ -33,12 +33,12 @@ export default function AppLayout() {
         { key: "clubs", icon: <TeamOutlined />, label: <Link to="/clubs">Club</Link> },
         { key: "users", icon: <UserOutlined />, label: <Link to="/users">Persone</Link> },
         { key: "messages", icon: <MessageOutlined />, label: <Link to="/messages">Messaggi</Link> },
-        { key: "universita", icon: <BankOutlined />, label: <Link to="/universita">Universita</Link> },
         { key: "create-event", icon: <PlusCircleOutlined />, label: <Link to="/create/event">Proponi</Link> },
     ];
 
     if (isAdmin) {
         menuItems.push(
+            { key: "universita", icon: <BankOutlined />, label: <Link to="/universita">Universita</Link> },
             { key: "moderation", icon: <SafetyOutlined />, label: <Link to="/moderation/queue">Moderazione</Link> },
             { key: "moderation-emails", icon: <MailOutlined />, label: <Link to="/moderation/emails">Email history</Link> }
         );
