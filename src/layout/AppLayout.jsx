@@ -13,13 +13,12 @@ const { Sider, Content } = Layout;
 export default function AppLayout() {
     const { pathname } = useLocation();
 
-    const selectedKey = pathname.startsWith("/create/event")
-        ? "create-event"
-        : pathname.startsWith("/moderation/emails")
-          ? "moderation-emails"
-          : pathname.startsWith("/moderation")
-            ? "moderation"
-            : pathname.split("/")[1] || "home";
+    const selectedKey = (() => {
+        if (pathname.startsWith("/create/event")) return "create-event";
+        if (pathname.startsWith("/moderation/emails")) return "moderation-emails";
+        if (pathname.startsWith("/moderation")) return "moderation";
+        return pathname.split("/")[1] || "home";
+    })();
 
     return (
         <Layout style={{ minHeight: "100vh" }}>
@@ -34,7 +33,7 @@ export default function AppLayout() {
                         { key: "events", icon: <CalendarOutlined />, label: <Link to="/events">Eventi</Link> },
                         { key: "create-event", icon: <PlusCircleOutlined />, label: <Link to="/create/event">Proponi</Link> },
                         { key: "moderation", icon: <SafetyOutlined />, label: <Link to="/moderation/queue">Moderazione</Link> },
-                        { key: "moderation-emails", icon: <MailOutlined />, label: <Link to="/moderation/emails">Email log</Link> },
+                        { key: "moderation-emails", icon: <MailOutlined />, label: <Link to="/moderation/emails">Email history</Link> },
                     ]}
                 />
             </Sider>
