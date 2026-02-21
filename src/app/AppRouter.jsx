@@ -22,6 +22,7 @@ import Inbox from "../pages/Inbox.jsx";
 import ForgotPassword from "../pages/ForgotPassword.jsx";
 import ModerationQueue from "../pages/ModerationQueue.jsx";
 import EmailHistory from "../pages/EmailHistory.jsx";
+import Feed from "../pages/Feed.jsx";
 
 function RouteWithAuth({ children, protect = false }) {
     const { user, loading } = useAuth();
@@ -75,6 +76,14 @@ const router = createBrowserRouter([
                 element: (
                     <RouteWithAuth>
                         <Home />
+                    </RouteWithAuth>
+                ),
+            },
+            {
+                path: "feed",
+                element: (
+                    <RouteWithAuth protect>
+                        <Feed />
                     </RouteWithAuth>
                 ),
             },

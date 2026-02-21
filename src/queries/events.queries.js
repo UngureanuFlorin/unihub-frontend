@@ -23,10 +23,14 @@ function mapEventToUi(dto) {
         title: dto.titolo,
         summary: dto.descrizione,
         description: dto.descrizione,
+        category: dto.categoria,
+        university: dto.universita,
         date: formatRaw(dto.dataInizio),
         datePretty: formatPretty(dto.dataInizio),
         place: dto.luogo,
         organizer: dto.creatore?.username,
+        likeCount: dto.likeCount ?? 0,
+        userLiked: dto.userLiked ?? false,
     };
 }
 
@@ -48,6 +52,8 @@ function mapEventDetailToUi(dto) {
         average: 0,
         comments: [],
         userIscritto: dto.userIscritto ?? false,
+        likeCount: dto.likeCount ?? 0,
+        userLiked: dto.userLiked ?? false,
         attendees: Array.isArray(dto.iscritti)
             ? dto.iscritti.map((u) => ({
                 id: String(u.id),
@@ -65,7 +71,14 @@ function cleanParams(filters) {
 }
 
 export async function fetchEvents(filters = {}) {
-    const res = await api.get("/eventi/search", { params: cleanParams(filters) });
+    let userId = null;
+    try {
+        userId = JSON.parse(localStorage.getItem("user"))?.id ?? null;
+    } catch {
+        userId = null;
+    }
+    const params = cleanParams({ ...filters, userId });
+    const res = await api.get("/eventi/search", { params });
     return Array.isArray(res.data) ? res.data.map(mapEventToUi) : [];
 }
 

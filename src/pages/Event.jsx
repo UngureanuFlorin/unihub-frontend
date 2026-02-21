@@ -3,9 +3,12 @@ import { useNavigate } from "react-router-dom";
 import { Badge, Button, Card, Input, List as AntList, Popconfirm, Space, Tabs, message } from "antd";
 import { AppstoreOutlined, TagsOutlined } from "@ant-design/icons";
 import { useEvents } from "../queries/events.queries";
+import { useLikeEvent, useUnlikeEvent } from "../queries/events.mutations.js";
 import { useUniversitaList } from "../queries/universita.queries.js";
 import { useCategories } from "../queries/categories.queries.js";
 import { useCreateCategory, useDeleteCategory } from "../queries/categories.mutations.js";
+import { useSavedEvents } from "../queries/bookmarks.queries.js";
+import { useRemoveEventBookmark, useSaveEventBookmark } from "../queries/bookmarks.mutations.js";
 import Hero from "../components/common/Hero.jsx";
 import Filters from "../components/common/Filters.jsx";
 import List from "../components/common/List.jsx";
@@ -48,6 +51,17 @@ export default function Event() {
     const isAdmin = user?.role === "ADMIN";
     const [newCategory, setNewCategory] = useState("");
     const [messageApi, contextHolder] = message.useMessage();
+    const [likingIds, setLikingIds] = useState([]);
+    const likeMutation = useLikeEvent();
+    const unlikeMutation = useUnlikeEvent();
+    const { data: savedEvents = [] } = useSavedEvents();
+    const saveBookmark = useSaveEventBookmark();
+    const removeBookmark = useRemoveEventBookmark();
+
+    const savedIds = useMemo(
+        () => new Set(savedEvents.map((ev) => String(ev.id))),
+        [savedEvents]
+    );
 
     const eventsContent = (
         <>
@@ -66,11 +80,45 @@ export default function Event() {
             />
 
             <List
-                items={items}
+                items={items.map((ev) => ({
+                    ...ev,
+                    isBookmarked: savedIds.has(String(ev.id)),
+                }))}
                 isLoading={isLoading}
                 isError={isError}
                 grid={{ gutter: 16, xs: 1, sm: 2, md: 2, lg: 3, xl: 3, xxl: 3 }}
                 onItemClick={(id) => navigate(`/events/${id}`)}
+                onToggleLike={(ev) => {
+                    if (!user?.id) {
+                        messageApi.error("Devi essere loggato");
+                        return;
+                    }
+                    setLikingIds((prev) => [...prev, ev.id]);
+                    const mutate = ev.userLiked ? unlikeMutation : likeMutation;
+                    mutate.mutate(
+                        { eventoId: ev.id, userId: user.id },
+                        {
+                            onError: () => {
+                                messageApi.error("Errore aggiornamento like");
+                            },
+                            onSettled: () => {
+                                setLikingIds((prev) => prev.filter((id) => id !== ev.id));
+                            },
+                        }
+                    );
+                }}
+                likingIds={likingIds}
+                onToggleBookmark={(ev) => {
+                    if (!user?.id) {
+                        messageApi.error("Devi essere loggato");
+                        return;
+                    }
+                    const mutation = ev.isBookmarked ? removeBookmark : saveBookmark;
+                    mutation.mutate(
+                        { eventId: ev.id, userId: user.id },
+                        { onError: () => messageApi.error("Errore aggiornamento salvataggio") }
+                    );
+                }}
             />
         </>
     );

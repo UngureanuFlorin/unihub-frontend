@@ -1,8 +1,9 @@
 import React from "react";
-import { Card, Typography, Space, Tag } from "antd";
+import { Button, Card, Typography, Space, Tag } from "antd";
+import { BookFilled, BookOutlined, HeartFilled, HeartOutlined } from "@ant-design/icons";
 const { Text } = Typography;
 
-export default function CustomCard({ ev, onClick }) {
+export default function CustomCard({ ev, onClick, onToggleLike, onToggleBookmark, isLiking }) {
     return (
         <Card
             hoverable
@@ -16,6 +17,31 @@ export default function CustomCard({ ev, onClick }) {
                 {ev.category && <Tag>{ev.category}</Tag>}
                 {ev.university && <Tag color="geekblue">{ev.university}</Tag>}
                 {ev.faculty && <Tag color="purple">{ev.faculty}</Tag>}
+            </Space>
+            <Space style={{ marginTop: 12 }}>
+                <Button
+                    size="small"
+                    type={ev.userLiked ? "primary" : "default"}
+                    icon={ev.userLiked ? <HeartFilled /> : <HeartOutlined />}
+                    loading={isLiking}
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        onToggleLike?.();
+                    }}
+                >
+                    {ev.likeCount ?? 0}
+                </Button>
+                <Button
+                    size="small"
+                    type={ev.isBookmarked ? "primary" : "default"}
+                    icon={ev.isBookmarked ? <BookFilled /> : <BookOutlined />}
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        onToggleBookmark?.();
+                    }}
+                >
+                    Salva
+                </Button>
             </Space>
         </Card>
     );

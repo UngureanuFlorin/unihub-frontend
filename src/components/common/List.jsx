@@ -8,6 +8,9 @@ export default function CustomList({
                                        isError,
                                        grid,
                                        onItemClick,
+                                       onToggleLike,
+                                       onToggleBookmark,
+                                       likingIds,
                                        hasNextPage,
                                        isFetchingNextPage,
                                        onLoadMore,
@@ -51,7 +54,13 @@ export default function CustomList({
                 grid={grid}
                 renderItem={(ev) => (
                     <List.Item key={ev.id}>
-                        <CustomCard ev={ev} onClick={() => onItemClick?.(ev.id)} />
+                        <CustomCard
+                            ev={ev}
+                            onClick={() => onItemClick?.(ev.id)}
+                            onToggleLike={onToggleLike ? () => onToggleLike(ev) : undefined}
+                            onToggleBookmark={onToggleBookmark ? () => onToggleBookmark(ev) : undefined}
+                            isLiking={Boolean(likingIds?.includes(ev.id))}
+                        />
                     </List.Item>
                 )}
             />

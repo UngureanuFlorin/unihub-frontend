@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useEvent } from "../queries/events.queries";
-import { useIscriviEvento, useDisiscriviEvento } from "../queries/events.mutations";
+import { useIscriviEvento, useDisiscriviEvento, useLikeEvent, useUnlikeEvent } from "../queries/events.mutations";
 import { useCommentsByEvento } from "../queries/comments.queries";
 import { useCreateComment, useDeleteComment } from "../queries/comments.mutations";
 import { useCreateReport } from "../queries/reports.mutations.js";
@@ -36,11 +36,17 @@ import {
     CheckCircleOutlined,
     CloseCircleOutlined,
     SendOutlined,
+    HeartOutlined,
+    HeartFilled,
     DeleteOutlined,
     FlagOutlined,
+    BookOutlined,
+    BookFilled,
 } from "@ant-design/icons";
 import dayjs from "dayjs";
 import { getErrorMessage } from "../utils/error.js";
+import { useSavedEvents } from "../queries/bookmarks.queries.js";
+import { useRemoveEventBookmark, useSaveEventBookmark } from "../queries/bookmarks.mutations.js";
 
 const { Title, Paragraph, Text } = Typography;
 const { TextArea } = Input;
@@ -50,7 +56,12 @@ export default function EventDetail() {
     const { data: ev, status, error, refetch } = useEvent(id);
     const iscriviMutation = useIscriviEvento();
     const disiscriviMutation = useDisiscriviEvento();
+    const likeMutation = useLikeEvent();
+    const unlikeMutation = useUnlikeEvent();
     const createReport = useCreateReport();
+    const { data: savedEvents = [] } = useSavedEvents();
+    const saveBookmark = useSaveEventBookmark();
+    const removeBookmark = useRemoveEventBookmark();
 
     // 🗨️ Commenti
     const { data: comments = [], refetch: refetchComments, isLoading: loadingComments } =
@@ -75,6 +86,8 @@ export default function EventDetail() {
             />
         );
     if (!ev) return null;
+
+    const isBookmarked = savedEvents.some((item) => String(item.id) === String(ev.id));
 
     const now = dayjs();
     const deadline = ev.deadlinePretty ? dayjs(ev.deadlinePretty) : null;
@@ -319,6 +332,45 @@ export default function EventDetail() {
                     )}
                     <Button icon={<CalendarOutlined />} onClick={handleExportCalendar}>
                         Esporta .ics
+                    </Button>
+                    <Button
+                        icon={ev.userLiked ? <HeartFilled /> : <HeartOutlined />}
+                        type={ev.userLiked ? "primary" : "default"}
+                        onClick={() => {
+                            if (!user?.id) {
+                                messageApi.error("Devi essere loggato");
+                                return;
+                            }
+                            const mutation = ev.userLiked ? unlikeMutation : likeMutation;
+                            mutation.mutate(
+                                { eventoId: ev.id, userId: user.id },
+                                {
+                                    onError: () => messageApi.error("Errore aggiornamento like"),
+                                    onSuccess: () => refetch(),
+                                }
+                            );
+                        }}
+                        loading={likeMutation.isPending || unlikeMutation.isPending}
+                    >
+                        {ev.likeCount ?? 0}
+                    </Button>
+                    <Button
+                        icon={isBookmarked ? <BookFilled /> : <BookOutlined />}
+                        type={isBookmarked ? "primary" : "default"}
+                        onClick={() => {
+                            if (!user?.id) {
+                                messageApi.error("Devi essere loggato");
+                                return;
+                            }
+                            const mutation = isBookmarked ? removeBookmark : saveBookmark;
+                            mutation.mutate(
+                                { eventId: ev.id, userId: user.id },
+                                { onError: () => messageApi.error("Errore salvataggio") }
+                            );
+                        }}
+                        loading={saveBookmark.isPending || removeBookmark.isPending}
+                    >
+                        Salva
                     </Button>
                     <Button icon={<FlagOutlined />} onClick={() => openReport("EVENT", ev.id)}>
                         Segnala evento

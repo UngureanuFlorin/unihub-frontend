@@ -10,6 +10,7 @@ import {
     TeamOutlined,
     UserOutlined,
     MessageOutlined,
+    ReadOutlined,
 } from "@ant-design/icons";
 import useAuth from "../hooks/useAuth.js";
 
@@ -35,6 +36,14 @@ export default function AppLayout() {
         { key: "messages", icon: <MessageOutlined />, label: <Link to="/messages">Messaggi</Link> },
         { key: "create-event", icon: <PlusCircleOutlined />, label: <Link to="/create/event">Proponi</Link> },
     ];
+
+    if (user) {
+        menuItems.splice(1, 0, {
+            key: "feed",
+            icon: <ReadOutlined />,
+            label: <Link to="/feed">Feed</Link>,
+        });
+    }
 
     if (isAdmin) {
         menuItems.push(

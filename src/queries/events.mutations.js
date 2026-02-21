@@ -49,3 +49,39 @@ export function useUpdateEvent() {
         },
     });
 }
+
+export function useLikeEvent() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationKey: ["likeEvent"],
+        mutationFn: async ({ eventoId, userId }) => {
+            const res = await api.post(`/eventi/${eventoId}/like`, null, {
+                params: { userId },
+            });
+            return res.data;
+        },
+        onSuccess: (_, variables) => {
+            queryClient.invalidateQueries({ queryKey: ["event", variables.eventoId] });
+            queryClient.invalidateQueries({ queryKey: ["events"] });
+        },
+    });
+}
+
+export function useUnlikeEvent() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationKey: ["unlikeEvent"],
+        mutationFn: async ({ eventoId, userId }) => {
+            const res = await api.post(`/eventi/${eventoId}/unlike`, null, {
+                params: { userId },
+            });
+            return res.data;
+        },
+        onSuccess: (_, variables) => {
+            queryClient.invalidateQueries({ queryKey: ["event", variables.eventoId] });
+            queryClient.invalidateQueries({ queryKey: ["events"] });
+        },
+    });
+}
