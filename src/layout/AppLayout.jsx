@@ -4,13 +4,13 @@ import {
     BankOutlined,
     HomeOutlined,
     CalendarOutlined,
-    PlusCircleOutlined,
     SafetyOutlined,
     MailOutlined,
     TeamOutlined,
     UserOutlined,
     MessageOutlined,
     ReadOutlined,
+    ClockCircleOutlined,
 } from "@ant-design/icons";
 import useAuth from "../hooks/useAuth.js";
 
@@ -22,7 +22,7 @@ export default function AppLayout() {
     const isAdmin = user?.role === "ADMIN";
 
     const selectedKey = (() => {
-        if (pathname.startsWith("/create/event")) return "create-event";
+        if (pathname.startsWith("/create/event")) return "events";
         if (pathname.startsWith("/moderation/emails")) return "moderation-emails";
         if (pathname.startsWith("/moderation")) return "moderation";
         return pathname.split("/")[1] || "home";
@@ -34,15 +34,13 @@ export default function AppLayout() {
         { key: "clubs", icon: <TeamOutlined />, label: <Link to="/clubs">Club</Link> },
         { key: "users", icon: <UserOutlined />, label: <Link to="/users">Persone</Link> },
         { key: "messages", icon: <MessageOutlined />, label: <Link to="/messages">Messaggi</Link> },
-        { key: "create-event", icon: <PlusCircleOutlined />, label: <Link to="/create/event">Proponi</Link> },
     ];
 
     if (user) {
-        menuItems.splice(1, 0, {
-            key: "feed",
-            icon: <ReadOutlined />,
-            label: <Link to="/feed">Feed</Link>,
-        });
+        menuItems.splice(1, 0,
+            { key: "feed", icon: <ReadOutlined />, label: <Link to="/feed">Feed</Link> },
+            { key: "lessons", icon: <ClockCircleOutlined />, label: <Link to="/lessons">Orario</Link> }
+        );
     }
 
     if (isAdmin) {

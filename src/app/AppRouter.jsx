@@ -23,6 +23,7 @@ import ForgotPassword from "../pages/ForgotPassword.jsx";
 import ModerationQueue from "../pages/ModerationQueue.jsx";
 import EmailHistory from "../pages/EmailHistory.jsx";
 import Feed from "../pages/Feed.jsx";
+import Lessons from "../pages/Lessons.jsx";
 
 function RouteWithAuth({ children, protect = false }) {
     const { user, loading } = useAuth();
@@ -84,6 +85,14 @@ const router = createBrowserRouter([
                 element: (
                     <RouteWithAuth protect>
                         <Feed />
+                    </RouteWithAuth>
+                ),
+            },
+            {
+                path: "lessons",
+                element: (
+                    <RouteWithAuth protect>
+                        <Lessons />
                     </RouteWithAuth>
                 ),
             },

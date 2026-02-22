@@ -11,6 +11,7 @@ import {
     message,
     Popconfirm,
     Space,
+    Tabs,
     Typography,
     Upload,
 } from "antd";
@@ -79,6 +80,7 @@ export default function Feed() {
     const [imageData, setImageData] = useState(null);
     const [commentDrafts, setCommentDrafts] = useState({});
     const [openComments, setOpenComments] = useState({});
+    const [savedSearch, setSavedSearch] = useState("");
 
     const savedPostIds = useMemo(
         () => new Set(savedPosts.map((post) => String(post.id))),
@@ -92,6 +94,15 @@ export default function Feed() {
             })),
         [posts, savedPostIds]
     );
+
+    const filteredSavedPosts = useMemo(() => {
+        const query = savedSearch.trim().toLowerCase();
+        return savedPosts.filter((post) => {
+            if (!query) return true;
+            return post.content?.toLowerCase().includes(query)
+                || post.authorUsername?.toLowerCase().includes(query);
+        });
+    }, [savedPosts, savedSearch]);
 
     const handleCreatePost = async () => {
         if (!user?.id) {
@@ -181,10 +192,8 @@ export default function Feed() {
         }));
     };
 
-    return (
-        <div style={{ padding: 24 }}>
-            {contextHolder}
-
+    const feedContent = (
+        <>
             <Card title="Feed personale" style={{ marginBottom: 16 }}>
                 <TextArea
                     rows={4}
@@ -385,6 +394,63 @@ export default function Feed() {
                     )}
                 />
             )}
+        </>
+    );
+
+    const savedContent = (
+        <Card title="Post salvati">
+            <Input
+                allowClear
+                placeholder="Cerca post salvati"
+                value={savedSearch}
+                onChange={(e) => setSavedSearch(e.target.value)}
+                style={{ marginBottom: 12, maxWidth: 320 }}
+            />
+            {!filteredSavedPosts.length ? (
+                <Empty description="Nessun post salvato" />
+            ) : (
+                <List
+                    dataSource={filteredSavedPosts}
+                    renderItem={(post) => (
+                        <List.Item
+                            key={post.id}
+                            actions={[
+                                <a
+                                    key="remove"
+                                    onClick={() => {
+                                        if (!user?.id) return;
+                                        removePostBookmark.mutate(
+                                            { postId: post.id, userId: user.id },
+                                            { onError: () => messageApi.error("Errore rimozione") }
+                                        );
+                                    }}
+                                >
+                                    Rimuovi
+                                </a>,
+                            ]}
+                        >
+                            <List.Item.Meta
+                                title={<Text strong>@{post.authorUsername}</Text>}
+                                description={<Text type="secondary">{formatDate(post.createdAt)}</Text>}
+                            />
+                            <Paragraph style={{ margin: 0 }}>{post.content}</Paragraph>
+                        </List.Item>
+                    )}
+                />
+            )}
+        </Card>
+    );
+
+    return (
+        <div style={{ padding: 24 }}>
+            {contextHolder}
+            <Tabs
+                defaultActiveKey="feed"
+                items={[
+                    { key: "feed", label: "Feed", children: feedContent },
+                    { key: "saved", label: "Post salvati", children: savedContent },
+                ]}
+            />
         </div>
     );
 }

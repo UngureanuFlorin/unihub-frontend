@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Badge, Button, Card, Input, List as AntList, Popconfirm, Space, Tabs, message } from "antd";
-import { AppstoreOutlined, TagsOutlined } from "@ant-design/icons";
+import { Badge, Button, Card, Input, List as AntList, Popconfirm, Select, Space, Tabs, Typography, message } from "antd";
+import { AppstoreOutlined, PlusCircleOutlined, TagsOutlined } from "@ant-design/icons";
 import { useEvents } from "../queries/events.queries";
 import { useLikeEvent, useUnlikeEvent } from "../queries/events.mutations.js";
 import { useUniversitaList } from "../queries/universita.queries.js";
@@ -19,6 +19,17 @@ function toLocalDateTimeParam(value) {
 
     const date = typeof value.toDate === "function" ? value.toDate() : value;
     return date.toISOString().slice(0, 19);
+}
+
+function formatPretty(iso) {
+    if (!iso) return undefined;
+    return new Date(iso).toLocaleString("it-IT", {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+    });
 }
 
 export default function Event() {
@@ -63,8 +74,67 @@ export default function Event() {
         [savedEvents]
     );
 
+    const [savedSearch, setSavedSearch] = useState("");
+    const [savedCategory, setSavedCategory] = useState(null);
+
+    const savedItems = useMemo(
+        () =>
+            savedEvents.map((dto) => ({
+                id: String(dto.id),
+                title: dto.titolo,
+                summary: dto.descrizione,
+                description: dto.descrizione,
+                category: dto.categoria,
+                university: dto.universita,
+                date: dto.dataInizio,
+                datePretty: formatPretty(dto.dataInizio),
+                place: dto.luogo,
+                organizer: dto.creatore?.username,
+                likeCount: dto.likeCount ?? 0,
+                userLiked: dto.userLiked ?? false,
+                isBookmarked: true,
+            })),
+        [savedEvents]
+    );
+
+    const savedCategories = useMemo(
+        () =>
+            Array.from(new Set(savedItems.map((ev) => ev.category).filter(Boolean))).map((cat) => ({
+                value: cat,
+                label: cat,
+            })),
+        [savedItems]
+    );
+
+    const filteredSavedItems = useMemo(() => {
+        const query = savedSearch.trim().toLowerCase();
+        return savedItems.filter((ev) => {
+            const matchesQuery = !query
+                || ev.title?.toLowerCase().includes(query)
+                || ev.summary?.toLowerCase().includes(query)
+                || ev.university?.toLowerCase().includes(query);
+            const matchesCategory = !savedCategory || ev.category === savedCategory;
+            return matchesQuery && matchesCategory;
+        });
+    }, [savedItems, savedSearch, savedCategory]);
+
     const eventsContent = (
         <>
+            <Space
+                align="center"
+                style={{ width: "100%", justifyContent: "space-between", marginBottom: 16 }}
+            >
+                <Typography.Title level={3} style={{ margin: 0 }}>
+                    Eventi
+                </Typography.Title>
+                <Button
+                    type="primary"
+                    icon={<PlusCircleOutlined />}
+                    onClick={() => navigate("/create/event")}
+                >
+                    Crea evento
+                </Button>
+            </Space>
             <Hero
                 titleGradientText="UniHub"
                 subtitle="Filtra per ateneo, categoria e data. Clicca un evento per i dettagli."
@@ -183,49 +253,110 @@ export default function Event() {
         </Card>
     );
 
+    const savedContent = (
+        <Card title="Eventi salvati">
+            <Space wrap style={{ marginBottom: 12 }}>
+                <Input
+                    allowClear
+                    placeholder="Cerca eventi salvati"
+                    value={savedSearch}
+                    onChange={(e) => setSavedSearch(e.target.value)}
+                    style={{ minWidth: 240 }}
+                />
+                <Select
+                    allowClear
+                    placeholder="Categoria"
+                    style={{ minWidth: 180 }}
+                    options={savedCategories}
+                    value={savedCategory}
+                    onChange={setSavedCategory}
+                />
+            </Space>
+            <List
+                items={filteredSavedItems}
+                isLoading={false}
+                isError={false}
+                grid={{ gutter: 16, xs: 1, sm: 2, md: 2, lg: 3, xl: 3, xxl: 3 }}
+                onItemClick={(id) => navigate(`/events/${id}`)}
+                onToggleLike={(ev) => {
+                    if (!user?.id) {
+                        messageApi.error("Devi essere loggato");
+                        return;
+                    }
+                    const mutate = ev.userLiked ? unlikeMutation : likeMutation;
+                    mutate.mutate(
+                        { eventoId: ev.id, userId: user.id },
+                        { onError: () => messageApi.error("Errore aggiornamento like") }
+                    );
+                }}
+                onToggleBookmark={(ev) => {
+                    if (!user?.id) {
+                        messageApi.error("Devi essere loggato");
+                        return;
+                    }
+                    removeBookmark.mutate(
+                        { eventId: ev.id, userId: user.id },
+                        { onError: () => messageApi.error("Errore rimozione") }
+                    );
+                }}
+            />
+        </Card>
+    );
+
+    const tabs = [
+        {
+            key: "events",
+            label: (
+                <Space>
+                    <AppstoreOutlined />
+                    Eventi
+                    <Badge
+                        count={items.length}
+                        overflowCount={999}
+                        style={{ backgroundColor: "#1677ff" }}
+                    />
+                </Space>
+            ),
+            children: eventsContent,
+        },
+        {
+            key: "saved",
+            label: (
+                <Space>
+                    Eventi salvati
+                    <Badge count={savedItems.length} overflowCount={99} />
+                </Space>
+            ),
+            children: savedContent,
+        },
+    ];
+
+    if (isAdmin) {
+        tabs.push({
+            key: "categories",
+            label: (
+                <Space>
+                    <TagsOutlined />
+                    Categorie
+                    <Badge
+                        count={categories.length}
+                        overflowCount={99}
+                        style={{ backgroundColor: "#00b96b" }}
+                    />
+                </Space>
+            ),
+            children: categoriesContent,
+        });
+    }
+
     return (
         <div style={{ padding: 24 }}>
             {contextHolder}
-            {isAdmin ? (
-                <Tabs
-                    defaultActiveKey="events"
-                    tabBarStyle={{ marginBottom: 16 }}
-                    items={[
-                        {
-                            key: "events",
-                            label: (
-                                <Space>
-                                    <AppstoreOutlined />
-                                    Eventi
-                                    <Badge
-                                        count={items.length}
-                                        overflowCount={999}
-                                        style={{ backgroundColor: "#1677ff" }}
-                                    />
-                                </Space>
-                            ),
-                            children: eventsContent,
-                        },
-                        {
-                            key: "categories",
-                            label: (
-                                <Space>
-                                    <TagsOutlined />
-                                    Categorie
-                                    <Badge
-                                        count={categories.length}
-                                        overflowCount={99}
-                                        style={{ backgroundColor: "#00b96b" }}
-                                    />
-                                </Space>
-                            ),
-                            children: categoriesContent,
-                        },
-                    ]}
-                />
-            ) : (
-                eventsContent
-            )}
+            <Tabs
+                defaultActiveKey="events"
+                tabBarStyle={{ marginBottom: 16 }}
+                items={tabs}
+            />
         </div>
     );
 }

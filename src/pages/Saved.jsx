@@ -1,6 +1,6 @@
-import { useMemo } from "react";
-import { Card, Empty, List, Space, Tabs, Typography, message } from "antd";
-import { CalendarOutlined, ReadOutlined } from "@ant-design/icons";
+import { useMemo, useState } from "react";
+import { Badge, Card, Empty, Input, List, Select, Space, Tabs, Typography, message } from "antd";
+import { CalendarOutlined, ReadOutlined, SearchOutlined } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import { useSavedEvents, useSavedPosts } from "../queries/bookmarks.queries.js";
 import { useRemoveEventBookmark, useRemovePostBookmark } from "../queries/bookmarks.mutations.js";
@@ -49,15 +49,65 @@ export default function Saved() {
     const removePost = useRemovePostBookmark();
     const [messageApi, contextHolder] = message.useMessage();
 
+    const [eventSearch, setEventSearch] = useState("");
+    const [eventCategory, setEventCategory] = useState(null);
+    const [postSearch, setPostSearch] = useState("");
+
     const eventItems = useMemo(() => savedEvents.map(mapEvent), [savedEvents]);
+    const eventCategories = useMemo(
+        () =>
+            Array.from(new Set(eventItems.map((ev) => ev.category).filter(Boolean))).map((cat) => ({
+                value: cat,
+                label: cat,
+            })),
+        [eventItems]
+    );
+    const filteredEvents = useMemo(() => {
+        const query = eventSearch.trim().toLowerCase();
+        return eventItems.filter((ev) => {
+            const matchesQuery = !query
+                || ev.title?.toLowerCase().includes(query)
+                || ev.summary?.toLowerCase().includes(query)
+                || ev.university?.toLowerCase().includes(query);
+            const matchesCategory = !eventCategory || ev.category === eventCategory;
+            return matchesQuery && matchesCategory;
+        });
+    }, [eventItems, eventSearch, eventCategory]);
+
+    const filteredPosts = useMemo(() => {
+        const query = postSearch.trim().toLowerCase();
+        return savedPosts.filter((post) => {
+            if (!query) return true;
+            return post.content?.toLowerCase().includes(query)
+                || post.authorUsername?.toLowerCase().includes(query);
+        });
+    }, [savedPosts, postSearch]);
 
     const eventsTab = (
         <Card>
-            {!eventItems.length && !loadingEvents ? (
+            <Space wrap style={{ marginBottom: 12 }}>
+                <Input
+                    allowClear
+                    placeholder="Cerca eventi salvati"
+                    prefix={<SearchOutlined />}
+                    value={eventSearch}
+                    onChange={(e) => setEventSearch(e.target.value)}
+                    style={{ minWidth: 240 }}
+                />
+                <Select
+                    allowClear
+                    placeholder="Categoria"
+                    style={{ minWidth: 180 }}
+                    options={eventCategories}
+                    value={eventCategory}
+                    onChange={setEventCategory}
+                />
+            </Space>
+            {!filteredEvents.length && !loadingEvents ? (
                 <Empty description="Nessun evento salvato" />
             ) : (
                 <ListEvents
-                    items={eventItems}
+                    items={filteredEvents}
                     isLoading={loadingEvents}
                     isError={false}
                     grid={{ gutter: 16, xs: 1, sm: 2, md: 2, lg: 3, xl: 3, xxl: 3 }}
@@ -76,11 +126,19 @@ export default function Saved() {
 
     const postsTab = (
         <Card>
-            {!savedPosts.length && !loadingPosts ? (
+            <Input
+                allowClear
+                placeholder="Cerca post salvati"
+                prefix={<SearchOutlined />}
+                value={postSearch}
+                onChange={(e) => setPostSearch(e.target.value)}
+                style={{ marginBottom: 12, maxWidth: 280 }}
+            />
+            {!filteredPosts.length && !loadingPosts ? (
                 <Empty description="Nessun post salvato" />
             ) : (
                 <List
-                    dataSource={savedPosts}
+                    dataSource={filteredPosts}
                     loading={loadingPosts}
                     renderItem={(post) => (
                         <List.Item
@@ -124,6 +182,7 @@ export default function Saved() {
                             <Space>
                                 <CalendarOutlined />
                                 Eventi salvati
+                                <Badge count={eventItems.length} />
                             </Space>
                         ),
                         children: eventsTab,
@@ -134,6 +193,7 @@ export default function Saved() {
                             <Space>
                                 <ReadOutlined />
                                 Post salvati
+                                <Badge count={savedPosts.length} />
                             </Space>
                         ),
                         children: postsTab,

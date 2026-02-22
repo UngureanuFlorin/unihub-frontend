@@ -1,4 +1,6 @@
-import { Button, Card, DatePicker, Form, Input, InputNumber, Select, message } from "antd";
+import { Button, Card, DatePicker, Form, Input, InputNumber, Select, Space, message } from "antd";
+import { ArrowLeftOutlined } from "@ant-design/icons";
+import { useNavigate } from "react-router-dom";
 import { useCreateEvent } from "../queries/events.mutations";
 import { getErrorMessage } from "../utils/error.js";
 import { useUserProfile } from "../queries/users.queries.js";
@@ -8,6 +10,7 @@ const { TextArea } = Input;
 const { RangePicker } = DatePicker;
 
 export default function SubmitEvent() {
+    const navigate = useNavigate();
     const [form] = Form.useForm();
     const createEventMutation = useCreateEvent();
     const [messageApi, contextHolder] = message.useMessage();
@@ -73,6 +76,12 @@ export default function SubmitEvent() {
     return (
         <div style={{ padding: 24 }}>
             {contextHolder}
+
+            <Space style={{ marginBottom: 16 }}>
+                <Button icon={<ArrowLeftOutlined />} onClick={() => navigate(-1)}>
+                    Torna indietro
+                </Button>
+            </Space>
 
             <Card
                 title="Crea un nuovo evento"
