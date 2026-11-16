@@ -1,6 +1,7 @@
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Button, Card, Popconfirm, Select, Space, Table, Tag, Typography, message } from "antd";
 import { Link } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import { useReports } from "../queries/reports.queries.js";
 import { useUpdateReportStatus } from "../queries/reports.mutations.js";
 import { getErrorMessage } from "../utils/error.js";
@@ -49,20 +50,21 @@ export default function ModerationQueue() {
     const restoreClubMutation = useRestoreClubModeration();
 
     const [messageApi, contextHolder] = message.useMessage();
-    const resolveReport = async (reportId) => {
+    const queryClient = useQueryClient();
+    const resolveReport = useCallback(async (reportId) => {
         await updateStatusMutation.mutateAsync({ reportId, status: "RESOLVED" });
-    };
+    }, [updateStatusMutation]);
 
-    const updateReportStatus = async (reportId, nextStatus) => {
+    const updateReportStatus = useCallback(async (reportId, nextStatus) => {
         try {
             await updateStatusMutation.mutateAsync({ reportId, status: nextStatus });
             messageApi.success("Stato aggiornato");
         } catch (err) {
             messageApi.error(getErrorMessage(err, "Errore aggiornamento stato"));
         }
-    };
+    }, [updateStatusMutation, messageApi]);
 
-    const renderTarget = (record) => {
+    const renderTarget = useCallback((record) => {
         if (record.targetType === "EVENT") {
             const label = record.targetSummary;
 
@@ -90,7 +92,7 @@ export default function ModerationQueue() {
         }
 
         return <Text>{record.targetSummary}</Text>;
-    };
+    }, []);
 
     const columns = useMemo(
         () => [
@@ -149,18 +151,31 @@ export default function ModerationQueue() {
                                 }
                                 okText="Conferma"
                                 cancelText="Annulla"
-                                onConfirm={async () => {
-                                    try {
-                                        if (record.targetHidden) {
-                                            await restoreEventMutation.mutateAsync(record.targetId);
-                                            messageApi.success("Evento ripristinato");
-                                        } else {
-                                            await hideEventMutation.mutateAsync(record.targetId);
-                                            messageApi.success("Evento oscurato");
-                                        }
-                                        await resolveReport(record.id);
-                                    } catch (err) {
-                                        messageApi.error(getErrorMessage(err, "Errore oscuramento evento"));
+                                onConfirm={() => {
+                                    if (record.targetHidden) {
+                                        restoreEventMutation.mutate(record.targetId, {
+                                            onSuccess: async () => {
+                                                messageApi.success("Evento ripristinato");
+                                                queryClient.setQueryData(["reports", { status: statusFilter, type: typeFilter }], (old) =>
+                                                    old?.map(r => r.id === record.id ? { ...r, status: "RESOLVED", targetHidden: false } : r) || []
+                                                );
+                                                await resolveReport(record.id);
+                                                queryClient.invalidateQueries({ queryKey: ["reports"] });
+                                            },
+                                            onError: (err) => messageApi.error(getErrorMessage(err, "Errore ripristino evento")),
+                                        });
+                                    } else {
+                                        hideEventMutation.mutate(record.targetId, {
+                                            onSuccess: async () => {
+                                                messageApi.success("Evento oscurato");
+                                                queryClient.setQueryData(["reports", { status: statusFilter, type: typeFilter }], (old) =>
+                                                    old?.map(r => r.id === record.id ? { ...r, status: "RESOLVED", targetHidden: true } : r) || []
+                                                );
+                                                await resolveReport(record.id);
+                                                queryClient.invalidateQueries({ queryKey: ["reports"] });
+                                            },
+                                            onError: (err) => messageApi.error(getErrorMessage(err, "Errore oscuramento evento")),
+                                        });
                                     }
                                 }}
                             >
@@ -178,19 +193,31 @@ export default function ModerationQueue() {
                                 }
                                 okText="Conferma"
                                 cancelText="Annulla"
-                                onConfirm={async () => {
-                                    try {
-                                        if (record.targetSuspended) {
-                                            await restoreClubMutation.mutateAsync(record.targetId);
-                                            messageApi.success("Club ripristinato");
-                                        } else {
-                                            await suspendClubMutation.mutateAsync(record.targetId);
-                                            messageApi.success("Club sospeso");
-                                        }
-
-                                        await resolveReport(record.id);
-                                    } catch (err) {
-                                        messageApi.error(getErrorMessage(err, "Errore azione club"));
+                                onConfirm={() => {
+                                    if (record.targetSuspended) {
+                                        restoreClubMutation.mutate(record.targetId, {
+                                            onSuccess: async () => {
+                                                messageApi.success("Club ripristinato");
+                                                queryClient.setQueryData(["reports", { status: statusFilter, type: typeFilter }], (old) =>
+                                                    old?.map(r => r.id === record.id ? { ...r, status: "RESOLVED", targetSuspended: false } : r) || []
+                                                );
+                                                await resolveReport(record.id);
+                                                queryClient.invalidateQueries({ queryKey: ["reports"] });
+                                            },
+                                            onError: (err) => messageApi.error(getErrorMessage(err, "Errore ripristino club")),
+                                        });
+                                    } else {
+                                        suspendClubMutation.mutate(record.targetId, {
+                                            onSuccess: async () => {
+                                                messageApi.success("Club sospeso");
+                                                queryClient.setQueryData(["reports", { status: statusFilter, type: typeFilter }], (old) =>
+                                                    old?.map(r => r.id === record.id ? { ...r, status: "RESOLVED", targetSuspended: true } : r) || []
+                                                );
+                                                await resolveReport(record.id);
+                                                queryClient.invalidateQueries({ queryKey: ["reports"] });
+                                            },
+                                            onError: (err) => messageApi.error(getErrorMessage(err, "Errore sospensione club")),
+                                        });
                                     }
                                 }}
                             >
@@ -206,10 +233,13 @@ export default function ModerationQueue() {
         [
             hideEventMutation,
             messageApi,
+            renderTarget,
+            resolveReport,
             restoreEventMutation,
             restoreClubMutation,
             suspendClubMutation,
-            updateStatusMutation,
+            updateReportStatus,
+            queryClient,
             statusFilter,
             typeFilter,
         ]

@@ -69,7 +69,7 @@ export default function Inbox() {
         let socket;
         try {
             socket = new SockJS("http://localhost:8080/ws");
-        } catch (err) {
+        } catch {
             messageApi.error("Errore inizializzazione chat");
             return undefined;
         }
